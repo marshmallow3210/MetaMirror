@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>user_showResult</title>
+</head>
+<body>
+    <div>
+        <h3>身體數據</h3>
+        <p>
+            {% for name,data in bodyData%}
+            {{ name }}: {{ data }} 公分<br>
+            {% endfor %}
+        </p>
+    </div>
+    <div>
+        <h3>建議尺寸</h3>
+        <p>
+            {{ size_result }}
+        </p>
+    </div>
+    <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000'" value="Go Home"></input>
+</body>
+</html>

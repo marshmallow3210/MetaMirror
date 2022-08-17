@@ -14,8 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
+from app.views import home,manual,openLidar,showLidar,showResult
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    re_path(r'^$', home, name='home'),
+    re_path(r'^user_manual/$', manual),
+    re_path(r'^openLidar/$', openLidar), # Lidar影像畫面
+    re_path(r'^user_showLidar/$', showLidar), # user執行Lidar的頁面
+    re_path(r'^user_showResult/$', showResult)
 ]
