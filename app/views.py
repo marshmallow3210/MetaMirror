@@ -7,6 +7,8 @@ import pyrealsense2 as rs
 from skimage import measure, filters
 from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
+from .forms import ClothseModelForm,ClothseDataModelForm
+from .models import Cloth,Cloth_data
 
 def home(request):
     return render(request,'home.html',locals())
@@ -440,3 +442,32 @@ def showResult(request):
 	bodyDataList = zip(bodyDataName , bodyData)
 
 	return render(request,'user_showResult.html',{'bodyData':bodyDataList,'size_result': size_result})
+def cloth_img(request):
+    cloths = Cloth.objects.all()
+    print(type(cloths))
+    form = ClothseModelForm()
+    if request.method == "POST":
+        form = ClothseModelForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            cloths=cloths[len(cloths)-1]
+    context = {
+        'app': cloths,
+        'form': form
+    }
+    return render(request, 'cloth_img.html', context)
+    
+def cloth_data(request):
+    form = ClothseDataModelForm()
+    if request.method == "POST":
+        form = ClothseDataModelForm(request.POST)
+        if form.is_valid():
+            form.save()
+    
+    context = {
+        'form': form
+    }
+    return render(request,'cloth_data.html',context)
+    
+def shop_manual(request):
+    return render(request,'shop_manual.html',{})

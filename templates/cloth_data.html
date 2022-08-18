@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <h1 align="center">cloth_info upload</h1>
+    <style>input[type='number']{
+        width: 80px;
+    } </style>
+</head>
+<body>
+    <div align="center">
+        <form method="post" action="cloth_data">
+            <table> 
+            {%csrf_token%} 
+                <tr>  
+                    <th>size</th>  
+                    <th>S</th>  
+                    <th>M</th>
+                    <th>L</th>
+                    <th>XL</th>
+                    <th>2L</th>  
+                </tr>  
+                <tr>  
+                    <th>衣服肩寬</th>
+                    <td>{{ form.shoulder_s }}</td>  
+                    <td>{{ form.shoulder_m }}</td>  
+                    <td>{{ form.shoulder_l }}</td> 
+                    <td>{{ form.shoulder_xl }}</td> 
+                    <td>{{ form.shoulder_2l }}</td>
+                </tr>  
+                <tr>  
+                    <th>衣服胸寬</th>
+                    <td>{{ form.chest_s }}</td>
+                    <td>{{ form.chest_m }}</td>
+                    <td>{{ form.chest_l }}</td>  
+                    <td>{{ form.chest_xl }}</td>  
+                    <td>{{ form.chest_2l }}</td>  
+                </tr>  
+                <tr>  
+                    <th>衣服全長</th>  
+                    <td>{{ form.length_s }}</td>  
+                    <td>{{ form.length_m }}</td>
+                    <td>{{ form.length_l }}</td>  
+                    <td>{{ form.length_xl }}</td>  
+                    <td>{{ form.length_2l }}</td>  
+                </tr> 
+
+            </table>
+            <br>
+            <button type="submit">提交</button> 
+        </form>
+    </div>
+</body>
+<footer>
+    <br>
+    <div align="center">2022</div>
+</footer>
+
+</html> 

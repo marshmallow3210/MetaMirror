@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <h1 align="center">cloth_img upload</h1>
+    <style>input[type='number']{
+        width: 80px;
+    } </style>
+</head>
+<body>
+    <div align="center">
+        <form method="post" action="cloth_img" enctype="multipart/form-data">
+            衣服圖片：
+            {%csrf_token%}
+            {{ form.image }}
+            <input type="submit" value="上傳"> 
+        </form>
+        {% block content %}
+        {% if shop.image %}
+            <img src="{{ shop.image.url }}">
+        {% endif %}
+        
+        {% endblock  %}
+        
+            <br>
+            <form method="post" action="cloth_data" enctype="multipart/form-data">
+                {% csrf_token %}
+                <button type="submit">下一步</button> 
+            </form>
+    </div>
+</body>
+
+<br>
+<br>
+
+<footer>
+    <div align="center">2022</div>
+</footer>
+
+</html>
