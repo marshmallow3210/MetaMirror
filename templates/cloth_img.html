@@ -17,8 +17,8 @@
             <input type="submit" value="上傳"> 
         </form>
         {% block content %}
-        {% if shop.image %}
-            <img src="{{ shop.image.url }}">
+        {% if app.image %}
+            <img src="{{ app.image.url }}">
         {% endif %}
         
         {% endblock  %}

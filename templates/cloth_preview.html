@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <h1 align="center">預覽衣服</h1>
+    <style>input[type='number']{
+        width: 80px;
+    } </style>
+</head>
+<body>
+    <div align="center">
+        {% block content %}
+        <table>
+            <tr>
+                <td>
+                    {% if shop.image %}
+                    <img src="{{ shop.image.url }}">
+                    {% endif %}
+                </td>
+                <td>
+                    cloth_preview
+                    <img src="">
+                </td>
+            </tr>
+        
+        
+        {% endblock  %}
+        </table>
+            <br>
+            <form method="post" action="home" enctype="multipart/form-data">
+                {% csrf_token %}
+                <button type="submit">回到首頁</button> 
+            </form>
+    </div>
+</body>
+
+<br>
+<br>
+
+<footer>
+    <div align="center">2022</div>
+</footer>
+
+</html>

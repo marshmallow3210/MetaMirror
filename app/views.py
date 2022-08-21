@@ -444,7 +444,7 @@ def showResult(request):
 	return render(request,'user_showResult.html',{'bodyData':bodyDataList,'size_result': size_result})
 def cloth_img(request):
     cloths = Cloth.objects.all()
-    print(type(cloths))
+    print(len(cloths))
     form = ClothseModelForm()
     if request.method == "POST":
         form = ClothseModelForm(request.POST, request.FILES)
@@ -471,3 +471,6 @@ def cloth_data(request):
     
 def shop_manual(request):
     return render(request,'shop_manual.html',{})
+
+def cloth_preview(request):
+    return render(request,'cloth_preview.html',{})
