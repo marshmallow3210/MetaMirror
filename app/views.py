@@ -458,6 +458,7 @@ def cloth_img(request):
     return render(request, 'cloth_img.html', context)
     
 def cloth_data(request):
+    cloth_info = Cloth_data.objects.all()
     form = ClothseDataModelForm()
     if request.method == "POST":
         form = ClothseDataModelForm(request.POST)
@@ -465,6 +466,7 @@ def cloth_data(request):
             form.save()
     
     context = {
+        'app': cloth_info,
         'form': form
     }
     return render(request,'cloth_data.html',context)
@@ -473,4 +475,9 @@ def shop_manual(request):
     return render(request,'shop_manual.html',{})
 
 def cloth_preview(request):
-    return render(request,'cloth_preview.html',{})
+    cloths = Cloth.objects.all()
+    cloths=cloths[len(cloths)-1]
+    context = {
+        'app': cloths,
+    }
+    return render(request,'cloth_preview.html',context)
