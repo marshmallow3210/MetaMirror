@@ -14,8 +14,8 @@
         <table>
             <tr>
                 <td>
-                    {% if shop.image %}
-                    <img src="{{ shop.image.url }}">
+                    {% if app.image %}
+                    <img src="{{ app.image.url }}">
                     {% endif %}
                 </td>
                 <td>
@@ -28,10 +28,7 @@
         {% endblock  %}
         </table>
             <br>
-            <form method="post" action="home" enctype="multipart/form-data">
-                {% csrf_token %}
-                <button type="submit">回到首頁</button> 
-            </form>
+            <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000'" value="回首頁"></input>
     </div>
 </body>
 

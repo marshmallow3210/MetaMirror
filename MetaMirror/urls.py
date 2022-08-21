@@ -27,7 +27,7 @@ urlpatterns = [
     re_path(r'^openLidar/$', openLidar), # Lidar影像畫面
     re_path(r'^user_showLidar/$', showLidar), # user執行Lidar的頁面
     re_path(r'^user_showResult/$', showResult),
-    path('app/', include('app.urls')),
+    path('', include('app.urls')),
 ]
 
 if settings.DEBUG:
