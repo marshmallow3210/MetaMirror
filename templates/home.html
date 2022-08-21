@@ -8,7 +8,7 @@
 <body>
     <h1 align="center">首頁</h1>
     <img src="{% static 'app/img/mirror_600.png'%}" width="500" heigh="300" alt="首頁圖片">
-        <form method="get" action="shop_manual">
+        <form method="get" action="app/shop_manual">
             {% csrf_token %}
             <button type="submit">Store</button>
         </form>
