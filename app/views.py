@@ -4,11 +4,21 @@ import json
 import numpy as np
 import mediapipe as mp
 import pyrealsense2 as rs
+import os
+import base64
+import glob
+import io
+import torch
+import torchvision.transforms as transforms
+from PIL import Image
+from .forms import ImageUploadForm
 from skimage import measure, filters
 from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
 from .forms import ClothseModelForm,ClothseDataModelForm
 from .models import Cloth,Cloth_data
+from app import networks
+from app.utils.transforms import transform_logits,get_affine_transform
 
 def home(request):
     return render(request,'home.html',locals())
@@ -472,6 +482,7 @@ def cloth_data(request):
 def shop_manual(request):
     return render(request,'shop_manual.html',{})
 
+
 def cloth_preview(request):
     #save cloth info
     form = ClothseDataModelForm()
@@ -493,3 +504,281 @@ def cloth_preview(request):
         'app': cloths,
     }
     return render(request,'cloth_preview.html',context)
+'''
+
+鄭翊宏部分還未對接
+'''
+
+def xywh2cs(x, y, w, h):
+    center = np.zeros((2), dtype=np.float32)
+    center[0] = x + w * 0.5
+    center[1] = y + h * 0.5
+    aspect_ratio=473 * 1.0 / 473
+    if w > aspect_ratio * h:
+        h = w * 1.0 / aspect_ratio
+    elif w < aspect_ratio * h:
+        w = h * aspect_ratio
+    scale = np.array([w, h], dtype=np.float32)
+    return center, scale
+
+def box2cs(box):
+    x, y, w, h = box[:4]
+    return xywh2cs(x, y, w, h)
+
+dataset_settings = {
+    'input_size': [473, 473],
+    'num_classes': 20,
+    'label': ['Background', 'Hat', 'Hair', 'Glove', 'Sunglasses', 'Upper-clothes', 'Dress', 'Coat',
+                  'Socks', 'Pants', 'Jumpsuits', 'Scarf', 'Skirt', 'Face', 'Left-arm', 'Right-arm',
+                  'Left-leg', 'Right-leg', 'Left-shoe', 'Right-shoe']
+}
+num_classes = dataset_settings['num_classes']
+input_size = dataset_settings['input_size']
+label = dataset_settings['label']
+model = networks.init_model('resnet101', num_classes=num_classes, pretrained=None)
+state_dict = torch.load('app/LIP/lip.pth')['state_dict']
+
+new_state_dict = OrderedDict()
+for k, v in state_dict.items():
+    name = k[7:]  # remove `module.`
+    new_state_dict[name] = v
+model.load_state_dict(new_state_dict)
+model.cpu()
+model.eval()
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229])
+])
+
+def get_palette(num_cls):
+    """ Returns the color map for visualizing the segmentation mask.
+    Args:
+        num_cls: Number of classes
+    Returns:
+        The color map
+    """
+    n = num_cls
+    palette = [0] * (n * 3)
+    for j in range(0, n):
+        lab = j
+        palette[j * 3 + 0] = 0
+        palette[j * 3 + 1] = 0
+        palette[j * 3 + 2] = 0
+        i = 0
+        while lab:
+            palette[j * 3 + 0] |= (((lab >> 0) & 1) << (7 - i))
+            palette[j * 3 + 1] |= (((lab >> 1) & 1) << (7 - i))
+            palette[j * 3 + 2] |= (((lab >> 2) & 1) << (7 - i))
+            i += 1
+            lab >>= 3
+    return palette
+
+def getEdgeAndLebel(request):
+    clothImage_uri = None
+    clothEdgeImage_uri=None
+    humanImage_uri=None
+    predicted_label_uri=None
+    if request.method == 'POST':
+        # in case of POST: get the uploaded image from the form and process it
+        form = ImageUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # retrieve the uploaded image and convert it to bytes (for PyTorch)
+            clothImage = form.cleaned_data['clothImage']
+            clothImage_bytes = clothImage.file.read()
+            humanImage = form.cleaned_data['humanImage']
+            humanImage_bytes = humanImage.file.read()
+            # convert and pass the image as base64 string to avoid storing it to DB or filesystem
+            encoded_img = base64.b64encode(clothImage_bytes).decode('ascii')
+            clothImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            clothImage=cv2.imdecode(clothImage,cv2.IMREAD_COLOR)
+            clothImage_uri = 'data:%s;base64,%s' % ('clothImage/jpg', encoded_img)
+            encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
+            humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
+            humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
+
+            # get predicted label with previously implemented PyTorch function
+            try:
+                #edge_part
+                img_gray=cv2.cvtColor(clothImage, cv2.COLOR_BGR2GRAY)
+                ret ,img_gray = cv2.threshold(img_gray,254, 255, cv2.THRESH_BINARY_INV)
+                img_gray = cv2.medianBlur(img_gray, 5)
+                img_gray=cv2.resize(img_gray,(192,256),interpolation=cv2.INTER_AREA)
+                retval, buffer = cv2.imencode('.jpg', img_gray)
+                jpg_as_text = base64.b64encode(buffer).decode('ascii')
+                clothEdgeImage_uri = 'data:%s;base64,%s' % ('clothEdgeImage/jepg', jpg_as_text)
+                #label_part
+                palette = get_palette(num_classes)
+                with torch.no_grad():
+                    c, s = box2cs([0, 0, 192 - 1, 256 - 1])
+                    r = 0
+                    trans = get_affine_transform(c, s, r, input_size)
+                    input = cv2.warpAffine(
+                        humanImage,
+                        trans,
+                        (int(input_size[1]), int(input_size[0])),
+                        flags=cv2.INTER_LINEAR,
+                        borderMode=cv2.BORDER_CONSTANT,
+                        borderValue=(0, 0, 0))
+
+                    input = transform(input)
+                    input = input.unsqueeze(0)
+                    output = model(input.cpu())
+                    upsample = torch.nn.Upsample(size=input_size, mode='bilinear', align_corners=True)
+                    upsample_output = upsample(output[0][-1][0].unsqueeze(0))
+                    upsample_output = upsample_output.squeeze()
+                    upsample_output = upsample_output.permute(1, 2, 0)  # CHW -> HWC
+                    logits_result = transform_logits(upsample_output.data.cpu().numpy(), c, s, 192, 256, input_size=input_size)
+                    parsing_result = np.argmax(logits_result, axis=2)
+                    #background
+                    parsing_result=np.where(parsing_result==0,0,parsing_result)
+                    #Pants
+                    parsing_result=np.where(parsing_result==9,8,parsing_result)
+                    parsing_result=np.where(parsing_result==12,8,parsing_result)
+                    #hair
+                    parsing_result=np.where(parsing_result==2,1,parsing_result)
+                    #face
+                    parsing_result=np.where(parsing_result==4,12,parsing_result)
+                    parsing_result=np.where(parsing_result==13,12,parsing_result)
+                    #upper-cloth
+                    parsing_result=np.where(parsing_result==5,4,parsing_result)
+                    parsing_result=np.where(parsing_result==6,4,parsing_result)
+                    parsing_result=np.where(parsing_result==7,4,parsing_result)
+                    parsing_result=np.where(parsing_result==10,4,parsing_result)
+                    #Left-shoe
+                    parsing_result=np.where(parsing_result==18,5,parsing_result)
+                    #Right-shoe
+                    parsing_result=np.where(parsing_result==19,6,parsing_result)
+                    #Left_leg
+                    parsing_result=np.where(parsing_result==16,9,parsing_result)
+                    #Right_leg
+                    parsing_result=np.where(parsing_result==17,10,parsing_result)
+                    #Left_arm
+                    parsing_result=np.where(parsing_result==14,11,parsing_result)
+                    #Right_arm
+                    parsing_result=np.where(parsing_result==15,13,parsing_result)
+                    retval, buffer = cv2.imencode('.jpg', parsing_result)
+                    jpg_as_text = base64.b64encode(buffer).decode('ascii')
+                    predicted_label_uri = 'data:%s;base64,%s' % ('predicted_label/jepg', jpg_as_text)
+                    
+            except RuntimeError as re:
+                print(re)
+
+    else:
+        # in case of GET: simply show the empty form for uploading images
+        form = ImageUploadForm()
+        
+    context = {
+        'form': form,
+        'clothImage_uri': clothImage_uri,
+        'clothEdgeImage_uri':clothEdgeImage_uri,
+        'humanImage_uri':humanImage_uri,
+        'predicted_label_uri': predicted_label_uri,
+    }
+    #還沒串接
+    #return render(request, 'app/index.html', context)
+    
+def changearm(old_label):
+    label=old_label
+    arm1=torch.FloatTensor((data['label'].cpu().numpy()==11).astype(np.int32))
+    arm2=torch.FloatTensor((data['label'].cpu().numpy()==13).astype(np.int32))
+    noise=torch.FloatTensor((data['label'].cpu().numpy()==7).astype(np.int32))
+    label=label*(1-arm1)+arm1*4
+    label=label*(1-arm2)+arm2*4
+    label=label*(1-noise)+noise*4
+    return label
+    
+def generateImage(request):
+    generateImage_uri = None
+    if request.method == 'POST':
+        # in case of POST: get the uploaded image from the form and process it
+        form = ImageUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # retrieve the uploaded image and convert it to bytes (for PyTorch)
+            SIZE=320
+            NC=14
+            # retrieve the uploaded image and convert it to bytes (for PyTorch)
+            labelImage = form.cleaned_data['label']
+            labelImage_bytes = labelImage.file.read()
+            humanImage = form.cleaned_data['image']
+            humanImage_bytes = humanImage.file.read()
+            colorImage = form.cleaned_data['color']
+            colorImage_bytes = colorImage.file.read()
+            colorMaskImage = form.cleaned_data['colorMask']
+            colorMaskImage_bytes = colorMaskImage.file.read()
+            edgeImage = form.cleaned_data['edge']
+            edgeImage_bytes = edgeImage.file.read()
+            maskImage = form.cleaned_data['mask']
+            maskImage_bytes = maskImage.file.read()
+            poseImage = form.cleaned_data['pose']
+            poseImage_bytes = poseImage.file.read()
+            # convert and pass the image as base64 string to avoid storing it to DB or filesystem
+            encoded_img = base64.b64encode(labelImage_bytes).decode('ascii')
+            labelImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            labelImage=cv2.imdecode(clothImage,cv2.IMREAD_COLOR)
+            
+            encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
+            humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
+            
+            encoded_img = base64.b64encode(colorImage_bytes).decode('ascii')
+            colorImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            colorImage=cv2.imdecode(colorImage,cv2.IMREAD_COLOR)
+            
+            encoded_img = base64.b64encode(colorMaskImage_bytes).decode('ascii')
+            colorMaskImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            colorMaskImage=cv2.imdecode(colorMaskImage,cv2.IMREAD_COLOR)
+            
+            encoded_img = base64.b64encode(edgeImage_bytes).decode('ascii')
+            edgeImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            edgeImage=cv2.imdecode(edgeImage,cv2.IMREAD_COLOR)
+            
+            encoded_img = base64.b64encode(maskImage_bytes).decode('ascii')
+            maskImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            maskImage=cv2.imdecode(maskImage,cv2.IMREAD_COLOR)
+    
+            try:
+                # whether to collect output images
+                #save_fake = total_steps % opt.display_freq == display_delta
+                save_fake = True
+
+                ##add gaussian noise channel
+                ## wash the label
+                t_mask = torch.FloatTensor((data['label'].cpu().numpy() == 7).astype(np.float64))
+                #
+                # data['label'] = data['label'] * (1 - t_mask) + t_mask * 4
+                mask_clothes = torch.FloatTensor((data['label'].cpu().numpy() == 4).astype(np.int32))
+                mask_fore = torch.FloatTensor((data['label'].cpu().numpy() > 0).astype(np.int32))
+                img_fore = data['image'] * mask_fore
+                img_fore_wc = img_fore * mask_fore
+                all_clothes_label = changearm(data['label'])
+                
+                ############## Forward Pass ######################
+                losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= model(Variable(data['label'].cuda()),Variable(data['edge'].cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
+                                                                                                            ,Variable(data['color'].cuda()),Variable(all_clothes_label.cuda()),Variable(data['image'].cuda()),Variable(data['pose'].cuda()) ,Variable(data['image'].cuda()) ,Variable(mask_fore.cuda()))
+                
+                ### display output images
+                generateImage = fake_image.float().cuda()
+                generateImage = generateImage[0].squeeze()
+                # combine=c[0].squeeze()
+                cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
+                rgb=(cv_img*255).astype(np.uint8)
+                bgr=cv2.cvtColor(rgb,cv2.COLOR_RGB2BGR)
+                retval, buffer = cv2.imencode('.jpg', img_gray)
+                jpg_as_text = base64.b64encode(buffer).decode('ascii')
+                generateImage_uri = 'data:%s;base64,%s' % ('generateImage/jepg', jpg_as_text)
+                
+            except RuntimeError as re:
+                print(re)
+                
+    else:
+        # in case of GET: simply show the empty form for uploading images
+        form = ImageUploadForm()
+        
+    context = {
+        'form': form,
+        'generateImage_uri': generateImage_uri,
+    }
+    #還沒串接
+    #return render(request, 'app/index.html', context)
