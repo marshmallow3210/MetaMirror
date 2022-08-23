@@ -36,3 +36,31 @@ class ClothseDataModelForm(forms.ModelForm):
             'length_xl':forms.NumberInput(attrs={'class': 'form-control','placeholder':'cm'}),
             'length_2l':forms.NumberInput(attrs={'class': 'form-control','placeholder':'cm'}),
         }
+        
+        
+class getEdgeAndLebelForm(forms.ModelForm):
+     class Meta:
+            model = getEdgeAndLebel_data
+            fields=('isShop','clothImage','humanImage')
+            widgets={
+            'isShop':forms.NumberInput(attrs={'class': 'form-control'}),
+            'clothImage': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'humanImage': forms.FileInput(attrs={'class': 'form-control-file'})
+         }
+            
+            
+
+class generateImageForm(forms.ModelForm):
+     class Meta:
+            model = generateImage_data
+            fields=('isShop','label','image','color','colorMask','edge','mask','pose')
+            widgets={
+            'isShop':forms.NumberInput(attrs={'class': 'form-control'}),
+            'label': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'image': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'color': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'colorMask': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'edge': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'mask': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'pose':forms.NumberInput(attrs={'class': 'form-control'}),
+         }

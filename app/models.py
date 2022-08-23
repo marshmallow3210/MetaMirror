@@ -27,3 +27,30 @@ class Cloth_data(models.Model):
     length_xl=models.IntegerField()
     length_2l=models.IntegerField()
     upload_date = models.DateField(default=timezone.now)
+    
+class getEdgeAndLebel_data(models.Model):
+    #是否為商店端
+    isShop=models.BooleanField()
+    #衣服圖片
+    clothImage = models.ImageField()
+    #人物圖片
+    humanImage = models.ImageField()
+    
+    
+class generateImage_data(models.Model):
+    #是否為商店端
+    isShop=models.BooleanField()
+    #標籤
+    label = models.ImageField()
+    #人物圖片
+    image = models.ImageField()
+    #衣服圖片
+    color = models.ImageField()
+    #衣服雜訊
+    colorMask = models.ImageField()
+    #衣服輪廓
+    edge =  models.ImageField()
+    #人物雜訊
+    mask =  models.ImageField()
+    #人物關鍵點
+    pose = models.FloatField()

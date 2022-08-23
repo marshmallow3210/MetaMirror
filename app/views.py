@@ -572,6 +572,8 @@ def getEdgeAndLebel(request):
         form = ImageUploadForm(request.POST, request.FILES)
         if form.is_valid():
             # retrieve the uploaded image and convert it to bytes (for PyTorch)
+            isShop=form.cleaned_data['isShop']
+            
             clothImage = form.cleaned_data['clothImage']
             clothImage_bytes = clothImage.file.read()
             humanImage = form.cleaned_data['humanImage']
@@ -652,10 +654,6 @@ def getEdgeAndLebel(request):
                     
             except RuntimeError as re:
                 print(re)
-
-    else:
-        # in case of GET: simply show the empty form for uploading images
-        form = ImageUploadForm()
         
     context = {
         'form': form,
@@ -664,8 +662,10 @@ def getEdgeAndLebel(request):
         'humanImage_uri':humanImage_uri,
         'predicted_label_uri': predicted_label_uri,
     }
-    #還沒串接
-    #return render(request, 'app/index.html', context)
+    if isShop:
+        return render(request, 'cloth_preview.html', context)
+    else:
+        return render(request, 'user_showResult.html', context)
     
 def changearm(old_label):
     label=old_label
@@ -687,6 +687,7 @@ def generateImage(request):
             SIZE=320
             NC=14
             # retrieve the uploaded image and convert it to bytes (for PyTorch)
+            isShop=form.cleaned_data['isShop']
             labelImage = form.cleaned_data['label']
             labelImage_bytes = labelImage.file.read()
             humanImage = form.cleaned_data['image']
@@ -699,8 +700,15 @@ def generateImage(request):
             edgeImage_bytes = edgeImage.file.read()
             maskImage = form.cleaned_data['mask']
             maskImage_bytes = maskImage.file.read()
-            poseImage = form.cleaned_data['pose']
-            poseImage_bytes = poseImage.file.read()
+            
+            
+            
+            encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
+            humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
+            humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
+            humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
+    '''  未修改部分
+            pose = form.cleaned_data['pose']
             # convert and pass the image as base64 string to avoid storing it to DB or filesystem
             encoded_img = base64.b64encode(labelImage_bytes).decode('ascii')
             labelImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
@@ -759,14 +767,13 @@ def generateImage(request):
                 
             except RuntimeError as re:
                 print(re)
-                
-    else:
-        # in case of GET: simply show the empty form for uploading images
-        form = ImageUploadForm()
-        
+        '''
     context = {
         'form': form,
-        'generateImage_uri': generateImage_uri,
+        'generateImage_uri': humanImage_uri
+        #'generateImage_uri': generateImage_uri,
     }
-    #還沒串接
-    #return render(request, 'app/index.html', context)
+    if isShop:
+        return render(request, 'cloth_preview.html', context)
+    else:
+        return render(request, 'user_showResult.html', context)
