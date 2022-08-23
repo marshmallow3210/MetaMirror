@@ -452,6 +452,14 @@ def showResult(request):
 	bodyDataList = zip(bodyDataName , bodyData)
 
 	return render(request,'user_showResult.html',{'bodyData':bodyDataList,'size_result': size_result})
+
+def user_selectCloth(request):
+    cloths = Cloth.objects.all()
+    context = {
+        'app': cloths,
+    }
+    return render(request, 'user_selectCloth.html', context)
+
 def cloth_img(request):
     cloths = Cloth.objects.all()
     form = ClothseModelForm()
