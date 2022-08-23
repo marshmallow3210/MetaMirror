@@ -452,15 +452,26 @@ def showResult(request):
 	bodyDataList = zip(bodyDataName , bodyData)
 
 	return render(request,'user_showResult.html',{'bodyData':bodyDataList,'size_result': size_result})
+
+def user_selectCloth(request):
+    cloths = Cloth.objects.all()
+    context = {
+        'app': cloths,
+    }
+    return render(request, 'user_selectCloth.html', context)
+
 def cloth_img(request):
     cloths = Cloth.objects.all()
-    print(len(cloths))
     form = ClothseModelForm()
     if request.method == "POST":
         form = ClothseModelForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            cloths=cloths[len(cloths)-1]
+            print("save_id:",len(cloths))
+            if(len(cloths)>=1):
+                cloths=cloths[len(cloths)-1]
+            else:
+                cloths=cloths[0]
     context = {
         'app': cloths,
         'form': form
@@ -468,15 +479,10 @@ def cloth_img(request):
     return render(request, 'cloth_img.html', context)
     
 def cloth_data(request):
-    cloth_info = Cloth_data.objects.all()
+    cloth_datas=Cloth_data.objects.all()
     form = ClothseDataModelForm()
-    if request.method == "POST":
-        form = ClothseDataModelForm(request.POST)
-        if form.is_valid():
-            form.save()
-    
     context = {
-        'app': cloth_info,
+        'app':cloth_datas,
         'form': form
     }
     return render(request,'cloth_data.html',context)
@@ -486,8 +492,22 @@ def shop_manual(request):
 
 
 def cloth_preview(request):
+    #save cloth info
+    form = ClothseDataModelForm()
+    if request.method == "POST":
+        form = ClothseDataModelForm(request.POST)
+        if form.is_valid():
+            form.save()
+            print('save_data')
+    
+    #preview cloth img
     cloths = Cloth.objects.all()
-    cloths=cloths[len(cloths)-1]
+    print(len(cloths))
+    if(len(cloths)>=1):
+        cloths=cloths[len(cloths)-1]
+    else:
+        cloths=cloths[0]
+    
     context = {
         'app': cloths,
     }

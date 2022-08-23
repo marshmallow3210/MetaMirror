@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link crossorigin="anonymous" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" rel="stylesheet"></link>
+    <title>user_selectCloth</title>
+</head>
+<body>
+    {% block content %}
+    <div class="row">
+        {% for cloth in app %}
+
+        <br>
+        {% if cloth.image %}
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+                <img class="card-img-top" src="{{ cloth.image.url }}" />
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <button onclick="javascript:location.href='http://127.0.0.1:8000/user_showResult'">確認試穿</button>
+{% endblock  %}
+</body>
