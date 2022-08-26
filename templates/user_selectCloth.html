@@ -6,21 +6,40 @@
     <title>user_selectCloth</title>
 </head>
 <body>
-    <h2>點選衣服試穿</h2>
+    <section class="text-center">
+        <div class="container">
+            <h1>
+                user_selectCloth
+            </h1>
+        </div>
+        
+    <form method="post" action="showResult">
+    {% csrf_token %}
     {% block content %}
+    <div class="container">
     <div class="row">
         {% for cloth in app %}
-
-        <br>
-        {% if cloth.image %}
-        <div class="col-md-3">
-            <div class="card mb-3 shadow-sm">
-                <img class="card-img-top" src="{{ cloth.image.url }}" />
-            </div>
-        </div>
-        {% endif %}
+            {% if cloth.image %}
+                <div class="col-md-3">
+                <div class="card mb-3 shadow-sm">
+                    <label id="imgButton">
+                        <img  class="card-img-top" src="{{ cloth.image.url }}" alt="{{cloth.id}}"/>
+                        <input type="radio"  name="cloth" value={{cloth.id}}>
+                    </label>        
+                </div>
+                </div>
+            {% endif %}
         {% endfor %}
     </div>
-    <button onclick="javascript:location.href='http://127.0.0.1:8000/user_showResult'">確認試穿</button>
-{% endblock  %}
+    </div>
+    {% endblock  %}
+    
+    <button>確認試穿</button>
+    </form> 
+    </section>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script crossorigin="anonymous" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+    <script crossorigin="anonymous" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script crossorigin="anonymous" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 </body>
