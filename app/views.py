@@ -10,13 +10,13 @@ import glob
 import io
 import torch
 import torchvision.transforms as transforms
+from collections import OrderedDict
 from PIL import Image
-from .forms import ImageUploadForm
 from skimage import measure, filters
 from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
-from .forms import ClothseModelForm,ClothseDataModelForm
-from .models import Cloth,Cloth_data
+from .forms import ClothseModelForm,ClothseDataModelForm,getEdgeAndLebelForm,generateImageForm
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
 
@@ -721,12 +721,15 @@ def generateImage(request):
             maskImage = form.cleaned_data['mask']
             maskImage_bytes = maskImage.file.read()
             
-        """
+
             
             encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
             humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
             humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
             humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
+            
+            
+            """
             pose = form.cleaned_data['pose']
             # convert and pass the image as base64 string to avoid storing it to DB or filesystem
             encoded_img = base64.b64encode(labelImage_bytes).decode('ascii')
