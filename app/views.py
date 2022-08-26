@@ -689,9 +689,9 @@ def getEdgeAndLebel(request):
     
 def changearm(old_label):
     label=old_label
-    arm1=torch.FloatTensor((data['label'].cpu().numpy()==11).astype(np.int32))
-    arm2=torch.FloatTensor((data['label'].cpu().numpy()==13).astype(np.int32))
-    noise=torch.FloatTensor((data['label'].cpu().numpy()==7).astype(np.int32))
+    arm1=torch.FloatTensor((old_label.cpu().numpy()==11).astype(np.int32))
+    arm2=torch.FloatTensor((old_label.cpu().numpy()==13).astype(np.int32))
+    noise=torch.FloatTensor((old_label.cpu().numpy()==7).astype(np.int32))
     label=label*(1-arm1)+arm1*4
     label=label*(1-arm2)+arm2*4
     label=label*(1-noise)+noise*4
@@ -721,13 +721,12 @@ def generateImage(request):
             maskImage = form.cleaned_data['mask']
             maskImage_bytes = maskImage.file.read()
             
-            
+        """
             
             encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
             humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
             humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
             humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
-    '''  未修改部分
             pose = form.cleaned_data['pose']
             # convert and pass the image as base64 string to avoid storing it to DB or filesystem
             encoded_img = base64.b64encode(labelImage_bytes).decode('ascii')
@@ -761,18 +760,18 @@ def generateImage(request):
 
                 ##add gaussian noise channel
                 ## wash the label
-                t_mask = torch.FloatTensor((data['label'].cpu().numpy() == 7).astype(np.float64))
+                t_mask = torch.FloatTensor((labelImage.cpu().numpy() == 7).astype(np.float64))
                 #
                 # data['label'] = data['label'] * (1 - t_mask) + t_mask * 4
-                mask_clothes = torch.FloatTensor((data['label'].cpu().numpy() == 4).astype(np.int32))
-                mask_fore = torch.FloatTensor((data['label'].cpu().numpy() > 0).astype(np.int32))
-                img_fore = data['image'] * mask_fore
+                mask_clothes = torch.FloatTensor((labelImage.cpu().numpy() == 4).astype(np.int32))
+                mask_fore = torch.FloatTensor((labelImage.cpu().numpy() > 0).astype(np.int32))
+                img_fore = humanImage * mask_fore
                 img_fore_wc = img_fore * mask_fore
-                all_clothes_label = changearm(data['label'])
+                all_clothes_label = changearm(labelImage)
                 
                 ############## Forward Pass ######################
-                losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= model(Variable(data['label'].cuda()),Variable(data['edge'].cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
-                                                                                                            ,Variable(data['color'].cuda()),Variable(all_clothes_label.cuda()),Variable(data['image'].cuda()),Variable(data['pose'].cuda()) ,Variable(data['image'].cuda()) ,Variable(mask_fore.cuda()))
+                losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= model(Variable(labelImage.cuda()),Variable(edgeImage.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
+                                                                                                            ,Variable(colorImage.cuda()),Variable(all_clothes_label.cuda()),Variable(humanImage.cuda()),Variable(pose.cuda()) ,Variable(humanImage.cuda()) ,Variable(mask_fore.cuda()))
                 
                 ### display output images
                 generateImage = fake_image.float().cuda()
@@ -787,7 +786,7 @@ def generateImage(request):
                 
             except RuntimeError as re:
                 print(re)
-        '''
+        """
     context = {
         'form': form,
         'generateImage_uri': humanImage_uri

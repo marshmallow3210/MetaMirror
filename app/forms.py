@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cloth,Cloth_data
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
 
 class ClothseModelForm(forms.ModelForm):
     class Meta:

@@ -1,5 +1,7 @@
 # This file may be used to create an environment using:
 # $ conda create --name <env> --file <this file>
+conda create --name metaMirror --file requirement.txt
+conda list -e > requirements.txt
 # platform: linux-64
 _libgcc_mutex=0.1=main
 _openmp_mutex=5.1=1_gnu
