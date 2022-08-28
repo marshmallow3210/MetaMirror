@@ -91,14 +91,14 @@ class Pix2PixHDModel(BaseModel):
 
         return loss_filter
 
-    def get_G(self, in_C, out_c, n_blocks, opt, L=1, S=1):
-        return networks.define_G(in_C, out_c, opt.ngf, opt.netG, L, S,
-                                 opt.n_downsample_global, n_blocks, opt.n_local_enhancers,
-                                 opt.n_blocks_local, opt.norm, gpu_ids=self.gpu_ids)
+    def get_G(self, in_C, out_c, n_blocks, L=1, S=1):
+        return networks.define_G(in_C, out_c, 64, 'global', L, S,
+                                 4, n_blocks, 1,
+                                 3, 'instance', gpu_ids=self.gpu_ids)
 
-    def get_D(self, inc, opt):
-        netD = networks.define_D(inc, opt.ndf, opt.n_layers_D, opt.norm, opt.no_lsgan,
-                                 opt.num_D, not opt.no_ganFeat_loss, gpu_ids=self.gpu_ids)
+    def get_D(self, inc):
+        netD = networks.define_D(inc, 64, 3, 'instance',False,
+                                 2, True, gpu_ids=self.gpu_ids)
         return netD
 
     def cross_entropy2d(self, input, target, weight=None, size_average=True):
@@ -132,12 +132,11 @@ class Pix2PixHDModel(BaseModel):
                 color[i, 2, :, :] = arms[i, 2, :, :].sum() / count
         return color
 
-    def initialize(self, opt):
-        BaseModel.initialize(self, opt)
-        if opt.resize_or_crop != 'none' or not opt.isTrain:  # when training at full res this causes OOM
-            torch.backends.cudnn.benchmark = True
-        self.isTrain = opt.isTrain
-        input_nc = opt.label_nc if opt.label_nc != 0 else opt.input_nc
+    def initialize(self):
+        BaseModel.initialize(self)
+        torch.backends.cudnn.benchmark = True
+        self.isTrain = True
+        input_nc = 20
         self.count = 0
         ##### define networks
         # Generator network
@@ -155,62 +154,29 @@ class Pix2PixHDModel(BaseModel):
 
         # Discriminator network
         if self.isTrain:
-            use_sigmoid = opt.no_lsgan
-            netD_input_nc = input_nc + opt.output_nc
-            netB_input_nc = opt.output_nc * 2
-            # self.D1 = self.get_D(17, opt)
-            # self.D2 = self.get_D(4, opt)
-            # self.D3=self.get_D(7+3,opt)
-            # self.D = self.get_D(20, opt)
-            # self.netB = networks.define_B(netB_input_nc, opt.output_nc, 32, 3, 3, opt.norm, gpu_ids=self.gpu_ids)
+            use_sigmoid = False
+            netD_input_nc = input_nc + 3
+            netB_input_nc = 6
 
-        if self.opt.verbose:
-            print('---------- Networks initialized -------------')
 
         # load networks
-        if not self.isTrain or opt.continue_train or opt.load_pretrain:
-            pretrained_path = '' if not self.isTrain else opt.load_pretrain
-            self.load_network(self.Unet, 'U', opt.which_epoch, pretrained_path)
-            self.load_network(self.G1, 'G1', opt.which_epoch, pretrained_path)
-            self.load_network(self.G2, 'G2', opt.which_epoch, pretrained_path)
-            self.load_network(self.G, 'G', opt.which_epoch, pretrained_path)
+        pretrained_path = './checkpoints/label2city'
+        self.load_network(self.Unet, 'U', 'latest', pretrained_path)
+        self.load_network(self.G1, 'G1', 'latest', pretrained_path)
+        self.load_network(self.G2, 'G2', 'latest', pretrained_path)
+        self.load_network(self.G, 'G', 'latest', pretrained_path)
         # set loss functions and optimizers
-        if self.isTrain:
-            if opt.pool_size > 0 and (len(self.gpu_ids)) > 1:
-                raise NotImplementedError("Fake Pool Not Implemented for MultiGPU")
-            self.fake_pool = ImagePool(opt.pool_size)
-            self.old_lr = opt.lr
+        self.fake_pool = ImagePool(0)
+        self.old_lr = 0.0002
+        # define loss functions
+        self.loss_filter = self.init_loss_filter(True, True)
 
-            # define loss functions
-            self.loss_filter = self.init_loss_filter(not opt.no_ganFeat_loss, not opt.no_vgg_loss)
-
-            self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan, tensor=self.Tensor)
-            self.criterionFeat = torch.nn.L1Loss()
-            if not opt.no_vgg_loss:
-                self.criterionVGG = networks.VGGLoss(self.gpu_ids)
-            self.criterionStyle = networks.StyleLoss(self.gpu_ids)
-            # Names so we can breakout loss
-            self.loss_names = self.loss_filter('G_GAN', 'G_GAN_Feat', 'G_VGG', 'D_real', 'D_fake')
-            # initialize optimizers
-            # optimizer G
-            if opt.niter_fix_global > 0:
-                import sys
-                if sys.version_info >= (3, 0):
-                    finetune_list = set()
-                else:
-                    from sets import Set
-                    finetune_list = Set()
-
-                params_dict = dict(self.netG.named_parameters())
-                params = []
-                for key, value in params_dict.items():
-                    if key.startswith('model' + str(opt.n_local_enhancers)):
-                        params += [value]
-                        finetune_list.add(key.split('.')[0])
-                print(
-                    '------------- Only training the local enhancer ork (for %d epochs) ------------' % opt.niter_fix_global)
-                print('The layers that are finetuned are ', sorted(finetune_list))
-
+        self.criterionGAN = networks.GANLoss(use_lsgan=Teue, tensor=self.Tensor)
+        self.criterionFeat = torch.nn.L1Loss()
+        self.criterionVGG = networks.VGGLoss(self.gpu_ids)
+        self.criterionStyle = networks.StyleLoss(self.gpu_ids)
+        # Names so we can breakout loss
+        self.loss_names = self.loss_filter('G_GAN', 'G_GAN_Feat', 'G_VGG', 'D_real', 'D_fake')
 
 
     def encode_input(self, label_map, clothes_mask, all_clothes_label):
@@ -232,20 +198,14 @@ class Pix2PixHDModel(BaseModel):
 
     def encode_input_test(self, label_map, label_map_ref, real_image_ref, infer=False):
 
-        if self.opt.label_nc == 0:
-            input_label = label_map.data.cuda()
-            input_label_ref = label_map_ref.data.cuda()
-        else:
-            # create one-hot vector for label map
-            size = label_map.size()
-            oneHot_size = (size[0], self.opt.label_nc, size[2], size[3])
-            input_label = torch.cuda.FloatTensor(torch.Size(oneHot_size)).zero_()
-            input_label = input_label.scatter_(1, label_map.data.long().cuda(), 1.0)
-            input_label_ref = torch.cuda.FloatTensor(torch.Size(oneHot_size)).zero_()
-            input_label_ref = input_label_ref.scatter_(1, label_map_ref.data.long().cuda(), 1.0)
-            if self.opt.data_type == 16:
-                input_label = input_label.half()
-                input_label_ref = input_label_ref.half()
+
+        # create one-hot vector for label map
+        size = label_map.size()
+        oneHot_size = (size[0],20, size[2], size[3])
+        input_label = torch.cuda.FloatTensor(torch.Size(oneHot_size)).zero_()
+        input_label = input_label.scatter_(1, label_map.data.long().cuda(), 1.0)
+        input_label_ref = torch.cuda.FloatTensor(torch.Size(oneHot_size)).zero_()
+        input_label_ref = input_label_ref.scatter_(1, label_map_ref.data.long().cuda(), 1.0)
 
         input_label = Variable(input_label, volatile=infer)
         input_label_ref = Variable(input_label_ref, volatile=infer)
@@ -391,19 +351,15 @@ class Pix2PixHDModel(BaseModel):
         params = list(self.netG.parameters())
         if self.gen_features:
             params += list(self.netE.parameters())
-        self.optimizer_G = torch.optim.Adam(params, lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
-        if self.opt.verbose:
-            print('------------ Now also finetuning global generator -----------')
+        self.optimizer_G = torch.optim.Adam(params, lr=0.0002, betas=(0.5, 0.999))
 
     def update_learning_rate(self):
-        lrd = self.opt.lr / self.opt.niter_decay
+        lrd = 0.0002 / 100
         lr = self.old_lr - lrd
         for param_group in self.optimizer_D.param_groups:
             param_group['lr'] = lr
         for param_group in self.optimizer_G.param_groups:
             param_group['lr'] = lr
-        if self.opt.verbose:
-            print('update learning rate: %f -> %f' % (self.old_lr, lr))
         self.old_lr = lr
 
 

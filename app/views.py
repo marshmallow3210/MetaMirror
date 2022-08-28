@@ -697,6 +697,67 @@ def changearm(old_label):
     label=label*(1-noise)+noise*4
     return label
     
+def scale_width(img, target_width, method=Image.BICUBIC):
+    ow, oh = img.size
+    if (ow == target_width):
+        return img    
+    w = target_width
+    h = int(target_width * oh / ow)    
+    return img.resize((w, h), method)    
+
+
+def __flip(img, flip):
+    if flip:
+        return img.transpose(Image.FLIP_LEFT_RIGHT)
+    return img
+    
+    
+def get_params(size):
+    w, h = size
+    new_h = h
+    new_w = w
+    x = random.randint(0, np.maximum(0, new_w - opt.fineSize))
+    y = random.randint(0, np.maximum(0, new_h - opt.fineSize))
+    #flip = random.random() > 0.5
+    flip = 0
+    return {'crop_pos': (x, y), 'flip': flip}    
+
+def get_transform(params, method=Image.BICUBIC, normalize=True):
+    transform_list = []
+    transform_list.append(transforms.Lambda(lambda img: scale_width(img, 512, method)))
+    osize = [256,192]
+    transform_list.append(transforms.Resize(osize, method))  
+    transform_list.append(transforms.Lambda(lambda img: flip(img, params['flip'])))
+
+    transform_list += [transforms.ToTensor()]
+
+    if normalize:
+        transform_list += [transforms.Normalize((0.5, 0.5, 0.5),
+                                                (0.5, 0.5, 0.5))]
+    return transforms.Compose(transform_list)
+    
+def makePose(pose,params):
+    transform_B= get_transform(params)  
+    pose_data = np.array(pose)
+    pose_data = pose_data.reshape((-1,3))
+    point_num = pose_data.shape[0]
+    pose_map = torch.zeros(point_num, 256, 192)
+    r = 5
+    im_pose = Image.new('L', (192, 256))
+    pose_draw = ImageDraw.Draw(im_pose)
+    for i in range(point_num):
+        one_map = Image.new('L', (192, 256))
+        draw = ImageDraw.Draw(one_map)
+        pointx = pose_data[i,0]
+        pointy = pose_data[i,1]
+        if pointx > 1 and pointy > 1:
+            draw.rectangle((pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
+            pose_draw.rectangle((pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
+        one_map = transform_B(one_map.convert('RGB'))
+        pose_map[i] = one_map[0]
+    return pose_map
+    
+
 def generateImage(request):
     generateImage_uri = None
     if request.method == 'POST':
@@ -729,33 +790,39 @@ def generateImage(request):
             humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
             
             
-            """
-            pose = form.cleaned_data['pose']
+            transform_A = get_transform(params, method=Image.NEAREST, normalize=False)
+            transform_B = get_transform(params)
+            
             # convert and pass the image as base64 string to avoid storing it to DB or filesystem
             encoded_img = base64.b64encode(labelImage_bytes).decode('ascii')
-            labelImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            labelImage=cv2.imdecode(clothImage,cv2.IMREAD_COLOR)
+            labelImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
+            labelTensor = transform_A(labelImage) * 255.0
             
             encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
-            humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
+            humanImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('RGB')
+            humanTensor = transform_B(humanImage)   
             
             encoded_img = base64.b64encode(colorImage_bytes).decode('ascii')
-            colorImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            colorImage=cv2.imdecode(colorImage,cv2.IMREAD_COLOR)
+            colorImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('RGB')
+            colorTensor = transform_B(colorImage)
             
             encoded_img = base64.b64encode(colorMaskImage_bytes).decode('ascii')
-            colorMaskImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            colorMaskImage=cv2.imdecode(colorMaskImage,cv2.IMREAD_COLOR)
+            colorMaskImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
+            colorMaskTensor = transform_A(colorMaskImage)
             
             encoded_img = base64.b64encode(edgeImage_bytes).decode('ascii')
-            edgeImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            edgeImage=cv2.imdecode(edgeImage,cv2.IMREAD_COLOR)
+            edgeImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
+            edgeTensor = transform_A(edgeImage)
             
             encoded_img = base64.b64encode(maskImage_bytes).decode('ascii')
-            maskImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            maskImage=cv2.imdecode(maskImage,cv2.IMREAD_COLOR)
+            maskImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
+            maskTensor = transform_A(maskImage)
     
+    
+            params=get_params(labelImage.size)
+            pose = form.cleaned_data['pose']
+            pose = makePose(pose,params)
+            """
             try:
                 # whether to collect output images
                 #save_fake = total_steps % opt.display_freq == display_delta
