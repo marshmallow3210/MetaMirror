@@ -822,26 +822,24 @@ def generateImage(request):
             params=get_params(labelImage.size)
             pose = form.cleaned_data['pose']
             pose = makePose(pose,params)
-            """
+            
             try:
                 # whether to collect output images
-                #save_fake = total_steps % opt.display_freq == display_delta
+                #save_fake = total_steps % 100 == display_delta
                 save_fake = True
 
                 ##add gaussian noise channel
                 ## wash the label
-                t_mask = torch.FloatTensor((labelImage.cpu().numpy() == 7).astype(np.float64))
-                #
-                # data['label'] = data['label'] * (1 - t_mask) + t_mask * 4
-                mask_clothes = torch.FloatTensor((labelImage.cpu().numpy() == 4).astype(np.int32))
-                mask_fore = torch.FloatTensor((labelImage.cpu().numpy() > 0).astype(np.int32))
-                img_fore = humanImage * mask_fore
+                t_mask = torch.FloatTensor((labelTensor.cpu().numpy() == 7).astype(np.float64))
+                mask_clothes = torch.FloatTensor((labelTensor.cpu().numpy() == 4).astype(np.int32))
+                mask_fore = torch.FloatTensor((labelTensor.cpu().numpy() > 0).astype(np.int32))
+                img_fore = humanTensor * mask_fore
                 img_fore_wc = img_fore * mask_fore
-                all_clothes_label = changearm(labelImage)
+                all_clothes_label = changearm(labelTensor)
                 
                 ############## Forward Pass ######################
-                losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= model(Variable(labelImage.cuda()),Variable(edgeImage.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
-                                                                                                            ,Variable(colorImage.cuda()),Variable(all_clothes_label.cuda()),Variable(humanImage.cuda()),Variable(pose.cuda()) ,Variable(humanImage.cuda()) ,Variable(mask_fore.cuda()))
+                losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= model(Variable(labelTensor.cuda()),Variable(edgeTensor.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
+                                                                                                            ,Variable(colorTensor.cuda()),Variable(all_clothes_label.cuda()),Variable(humanTensor.cuda()),Variable(pose.cuda()) ,Variable(humanTensor.cuda()) ,Variable(mask_fore.cuda()))
                 
                 ### display output images
                 generateImage = fake_image.float().cuda()
@@ -856,7 +854,7 @@ def generateImage(request):
                 
             except RuntimeError as re:
                 print(re)
-        """
+        
     context = {
         'form': form,
         'generateImage_uri': humanImage_uri
