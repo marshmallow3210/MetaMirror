@@ -24,7 +24,7 @@
         {% endblock  %}
         
             <br>
-            <form method="get" action="cloth_data" enctype="multipart/form-data">
+            <form method="post" action="cloth_data" enctype="multipart/form-data">
                 {% csrf_token %}
                 <button type="submit">下一步</button> 
             </form>

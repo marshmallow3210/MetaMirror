@@ -15,7 +15,7 @@ from PIL import Image
 from skimage import measure, filters
 from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
-from .forms import ClothseModelForm,ClothseDataModelForm,getEdgeAndLebelForm,generateImageForm
+from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
 from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
@@ -462,9 +462,9 @@ def user_selectCloth(request):
 
 def cloth_img(request):
     cloths = Cloth.objects.all()
-    form = ClothseModelForm()
+    form = ClothesModelForm()
     if request.method == "POST":
-        form = ClothseModelForm(request.POST, request.FILES)
+        form = ClothesModelForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             print("save_id:",len(cloths))
@@ -479,12 +479,19 @@ def cloth_img(request):
     return render(request, 'cloth_img.html', context)
     
 def cloth_data(request):
-    cloth_datas=Cloth_data.objects.all()
-    form = ClothseDataModelForm()
+    form = ClothesDataModelForm()
+    
+    cloths = Cloth.objects.all()
+    if(len(cloths)>=1):
+        cloths=cloths[len(cloths)-1]
+    else:
+        cloths=cloths[0]
+    print(cloths.id)
     context = {
-        'app':cloth_datas,
+        'shop':cloths,
         'form': form
     }
+    context['form'].fields['image_ID'].initial=cloths.id 
     return render(request,'cloth_data.html',context)
     
 def shop_manual(request):
@@ -492,25 +499,29 @@ def shop_manual(request):
 
 
 def cloth_preview(request):
-    #save cloth info
-    form = ClothseDataModelForm()
-    if request.method == "POST":
-        form = ClothseDataModelForm(request.POST)
-        if form.is_valid():
-            form.save()
-            print('save_data')
-    
-    #preview cloth img
+    form = ClothesDataModelForm()
     cloths = Cloth.objects.all()
-    print(len(cloths))
     if(len(cloths)>=1):
         cloths=cloths[len(cloths)-1]
     else:
         cloths=cloths[0]
-    
+    print(cloths.id)
+
+    if request.method == "POST":
+        form = ClothesDataModelForm(request.POST)
+        #print(request.POST['image_ID'])
+        if form.is_valid():
+            print('yes')
+            cloth_info=form.cleaned_data
+            cloth_info['image_ID']=cloths.id
+            print(cloth_info)
+            Cloth_data.objects.create(**cloth_info)
+            
     context = {
         'app': cloths,
+        'text': form
     }
+    context['text'].fields['image_ID'].initial=cloths.id    
     return render(request,'cloth_preview.html',context)
 '''
 

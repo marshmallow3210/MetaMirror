@@ -8,7 +8,7 @@ class Cloth(models.Model):
 
 class Cloth_data(models.Model):
     #衣服資訊
-    #image_name = models.TextField()
+    image_ID = models.IntegerField(default=0)
     shoulder_s=models.IntegerField()
     shoulder_m=models.IntegerField()
     shoulder_l=models.IntegerField()

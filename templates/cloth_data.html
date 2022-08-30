@@ -11,8 +11,17 @@
 <body>
     <div align="center">
         <form method="post" action="cloth_preview">
-            <table> 
             {%csrf_token%} 
+            {% block content %}
+            {% if shop.image %}
+                <img src="{{ shop.image.url }}">
+                <br>
+                <p>{{form.image_ID}}</p>
+            {% endif %}
+            
+            {% endblock  %} 
+            <table> 
+            
                 <tr>  
                     <th>size</th>  
                     <th>S</th>  
