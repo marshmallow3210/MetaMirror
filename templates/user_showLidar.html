@@ -9,9 +9,16 @@
     <br>
     <img id="openLidar" style="height:270px; width:480px;" >
     <br>
+    <form method="post" action="user_showResult">
+        {% csrf_token %}
+        <button type="submit">user_showResult</button>
+    </form>
     <button onclick="javascript:location.href='http://127.0.0.1:8000/user_selectCloth'">確認影像並開始試穿</button>
     <br>
-    <button onclick="javascript:location.href='http://127.0.0.1:8000'">Go Home</button>
+    <form method="get" action="">
+        {% csrf_token %}
+        <button type="submit">Go Home</button>
+    </form>
     <br>
     <div>
         {{ keypoints }}

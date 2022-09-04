@@ -22,10 +22,11 @@ from app.utils.transforms import transform_logits,get_affine_transform
 
 def home(request):
     return render(request,'home.html',locals())
-def manual(request):
+def user_manual(request):
     return render(request,'user_manual.html',locals())
 
 def runLidar():    
+    '''
     # Create a pipeline
     pipeline = rs.pipeline()
     
@@ -280,10 +281,13 @@ def runLidar():
     hipxyzR = rs.rs2_deproject_pixel_to_point(depth_intrin, hip_xyR, hip_depthR)
     print("INFO: The position of left hip is", hip_xyL, "px,", hip_depthL, "m")
     print("INFO: The position of right hip is", hip_xyR, "px,", hip_depthR, "m")
-        
-    # get bodyData
-    global bodyData 
     
+    '''
+            
+    # get bodyData
+    global bodyData, pose_img, selectedcloth_img, pose_keypoints
+    
+    '''
     bodyData = [0,0,0,0]
     shoulderWidth = 0
     chestWidth = 0
@@ -356,7 +360,7 @@ def runLidar():
     print("INFO: The clothingLength is", clothingLength, "cm")
     bodyData[2] = clothingLength
     print(bodyData)
-    
+
     json_string = {"version": 1.0, "people": [{"face_keypoints": [],
                                                 "pose_keypoints": [
                                                     nose_xy[0], nose_xy[1], nose_depth, 
@@ -386,73 +390,105 @@ def runLidar():
     # Using a JSON string
     with open('keypoints.json', 'w') as outfile:
         outfile.write(json_keypoints)
+    '''
+    
+    bodyData=[37,42,66]
+    pose_img = cv2.imread('020000_0.jpg')
+    selectedcloth_img = cv2.imread('020000_1.jpg')
+    pose_keypoints = [95.76296296296296 ,85.33333333333333, 1.404750108718872, 
+                    99.55555555555556, 130.84444444444443, 1.4445000886917114, 
+                    66.84444444444445, 131.31851851851852, 1.4512500762939453, 
+                    41.24444444444445 ,180.62222222222223, 1.443000078201294, 
+                    10.42962962962963, 221.86666666666667, 1.4037500619888306, 
+                    132.26666666666668, 130.37037037037038, 1.4852501153945923, 
+                    156.44444444444446, 183.46666666666667, 1.567500114440918, 
+                    188.2074074074074, 232.2962962962963, 1.564500093460083, 
+                    79.17037037037036, 212.85925925925926, 1.3842500448226929, 
+                    0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0,
+                    116.62222222222222, 214.28148148148148, 1.409250020980835,
+                    0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 
+                    87.70370370370371 ,79.64444444444445, 1.41225004196167, 
+                    101.92592592592592, 79.17037037037036, 1.411500096321106,
+                    82.96296296296296 ,84.85925925925926, 1.4270000457763672, 
+                    109.98518518518519, 82.96296296296296, 1.4280000925064087]
     
     return bodyData
              
-def openLidar(request):    
-    bodyData = runLidar()
-    print(bodyData)
+def openLidar(request):   
     return StreamingHttpResponse(runLidar(), content_type='multipart/x-mixed-replace; boundary=frame')
 
-def showLidar(request):
+def user_showLidar(request):
+    bodyData = runLidar()
+    print(bodyData)
     return render(request,'user_showLidar.html',locals())
 
-def showResult(request):
-	bodyDataName = ["肩寬","胸寬","身長"]
-	size_str = ""
-	size_cnt = []
-	size_result = ""
-	# size chart, need to import from database
-	chart = [[35, 40, 42, 43, 46],
-			[49, 53, 57, 58, 62],
-			[70, 75, 78, 81, 82],
-			[30, 32, 33, 34, 35]]
- 
-	# compare with size chart
-	for i in range(0, 3):
-		bodyData[i] = np.round(bodyData[i],2)
-		bodyData[i] = float(bodyData[i])
-		if bodyData[i] <= chart[i][0]:
-			size_str += "S"
-		elif bodyData[i] >= chart[i][0] and bodyData[i] <= chart[i][1]:
-			size_str += "M"
-		elif bodyData[i] >= chart[i][1] and bodyData[i] <= chart[i][2]:
-			size_str += "L"
-		elif bodyData[i] >= chart[i][2] and bodyData[i] <= chart[i][3]:
-			size_str += "XL"
-		else:
-			size_str += "2XL"
+def user_showResult(request):
+    bodyDataName = ["肩寬","胸寬","身長"]
+    size_str = ""
+    size_cnt = []
+    size_result = ""
+    # size chart, need to import from database
+    chart = [[35, 40, 42, 43, 46],
+            [49, 53, 57, 58, 62],
+            [70, 75, 78, 81, 82],
+            [30, 32, 33, 34, 35]]
 
-	# descending order, because of index()
-	size_cnt.append(size_str.count("2XL"))
-	size_cnt.append(size_str.count("XL"))
-	size_cnt.append(size_str.count("L"))
-	size_cnt.append(size_str.count("M"))
-	size_cnt.append(size_str.count("S"))
-	print(size_str)
-	print(size_cnt)
+    # compare with size chart
+    for i in range(0, 3):
+        bodyData[i] = np.round(bodyData[i],2)
+        bodyData[i] = float(bodyData[i])
+        if bodyData[i] <= chart[i][0]:
+            size_str += "S"
+        elif bodyData[i] >= chart[i][0] and bodyData[i] <= chart[i][1]:
+            size_str += "M"
+        elif bodyData[i] >= chart[i][1] and bodyData[i] <= chart[i][2]:
+            size_str += "L"
+        elif bodyData[i] >= chart[i][2] and bodyData[i] <= chart[i][3]:
+            size_str += "XL"
+        else:
+            size_str += "2XL"
 
-	recommend_size = size_cnt.index(max(size_cnt))
-	if recommend_size == 0:
-		size_result = "The fit size is 2XL and the loose size is 3XL"
-		print("INFO: The fit size is 2XL and the loose size is 3XL")
-	elif recommend_size == 1:
-		size_result = "The fit size is XL and the loose size is 2XL"
-		print("INFO: The fit size is XL and the loose size is 2XL")
-	elif recommend_size == 2:
-		size_result = "The fit size is L and the loose size is XL"
-		print("INFO: The fit size is L and the loose size is XL")
-	elif recommend_size == 3:
-		size_result = "The fit size is M and the loose size is L"
-		print("INFO: The fit size is M and the loose size is L")
-	else:
-		size_result = "The fit size is S and the loose size is M"
-		print("INFO: The fit size is S and the loose size is M")
+    # descending order, because of index()
+    size_cnt.append(size_str.count("2XL"))
+    size_cnt.append(size_str.count("XL"))
+    size_cnt.append(size_str.count("L"))
+    size_cnt.append(size_str.count("M"))
+    size_cnt.append(size_str.count("S"))
+    print(size_str)
+    print(size_cnt)
+
+    recommend_size = size_cnt.index(max(size_cnt))
+    if recommend_size == 0:
+        size_result = "The fit size is 2XL and the loose size is 3XL"
+        print("INFO: The fit size is 2XL and the loose size is 3XL")
+    elif recommend_size == 1:
+        size_result = "The fit size is XL and the loose size is 2XL"
+        print("INFO: The fit size is XL and the loose size is 2XL")
+    elif recommend_size == 2:
+        size_result = "The fit size is L and the loose size is XL"
+        print("INFO: The fit size is L and the loose size is XL")
+    elif recommend_size == 3:
+        size_result = "The fit size is M and the loose size is L"
+        print("INFO: The fit size is M and the loose size is L")
+    else:
+        size_result = "The fit size is S and the loose size is M"
+        print("INFO: The fit size is S and the loose size is M")
+
+    bodyDataList = zip(bodyDataName , bodyData)
+
+    context = {
+        'bodyDataList': bodyDataList,
+        'pose_keypoints': pose_keypoints,
+        'pose_img': pose_img,
+        'selectedcloth_img': selectedcloth_img,
+        'size_result': size_result
+    }
+    
+    return render(request,'user_showResult.html', context)
+
 	
-	bodyDataList = zip(bodyDataName , bodyData)
-
-	return render(request,'user_showResult.html',{'bodyData':bodyDataList,'size_result': size_result})
-
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
     context = {

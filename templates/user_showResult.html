@@ -8,9 +8,14 @@
     <div>
         <h3>身體數據</h3>
         <p>
-            {% for name,data in bodyData%}
+            {% for name,data in bodyDatalist%}
             {{ name }}: {{ data }} 公分<br>
             {% endfor %}
+        </p>
+        <p>
+            {{ pose_keypoints }}<br>
+            <img src="{{ pose_img }}"/><br>
+            <img src="{{ selectedcloth_img }}"/><br>
         </p>
     </div>
     <div>

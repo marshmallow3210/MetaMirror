@@ -15,7 +15,10 @@
                 <button type="submit">Store</button>
         </form>
         <br>
-        <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000/user_manual'" value="start!"></input>
+        <form method="get" action="user_manual">
+                {% csrf_token %}
+                <button type="submit">User</button>
+        </form>
     
     </div>
 </body>

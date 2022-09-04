@@ -22,11 +22,6 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path(r'^$', home, name='home'),
-    re_path(r'^user_manual/$', manual),
-    re_path(r'^openLidar/$', openLidar), # Lidar影像畫面
-    re_path(r'^user_showLidar/$', showLidar), # user執行Lidar的頁面
-    re_path(r'^user_showResult/$', showResult),
     path('', include('app.urls')),
 ]
 
