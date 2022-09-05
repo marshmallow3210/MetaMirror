@@ -477,7 +477,16 @@ def user_showResult(request):
         print("INFO: The fit size is S and the loose size is M")
 
     bodyDataList = zip(bodyDataName , bodyData)
-
+    #get user selection of cloth image and data
+    """
+    cloth = NULL
+    cloth_data=NULL
+    if request.method == "POST":
+        print(request.POST['cloth'])
+        cloth=Cloth.objects.get(id=request.POST['cloth'])
+        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
+        print(cloth_data)
+    """
     context = {
         'bodyDataList': bodyDataList,
         'pose_keypoints': pose_keypoints,
