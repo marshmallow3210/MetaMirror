@@ -9,17 +9,20 @@ import base64
 import glob
 import io
 import torch
+import random
 import torchvision.transforms as transforms
+from torch.autograd import Variable
 from collections import OrderedDict
-from PIL import Image
+from PIL import Image,ImageDraw
 from skimage import measure, filters
 from django.shortcuts import render
 from django.http import HttpResponse, StreamingHttpResponse
 from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
 from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
+from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
-
+os.environ['CUDA_LAUNCH_BLOCKING']='1'
 def home(request):
     return render(request,'home.html',locals())
 def user_manual(request):
@@ -423,80 +426,6 @@ def user_showLidar(request):
     bodyData = runLidar()
     print(bodyData)
     return render(request,'user_showLidar.html',locals())
-
-def user_showResult(request):
-    bodyDataName = ["肩寬","胸寬","身長"]
-    size_str = ""
-    size_cnt = []
-    size_result = ""
-    # size chart, need to import from database
-    chart = [[35, 40, 42, 43, 46],
-            [49, 53, 57, 58, 62],
-            [70, 75, 78, 81, 82],
-            [30, 32, 33, 34, 35]]
-
-    # compare with size chart
-    for i in range(0, 3):
-        bodyData[i] = np.round(bodyData[i],2)
-        bodyData[i] = float(bodyData[i])
-        if bodyData[i] <= chart[i][0]:
-            size_str += "S"
-        elif bodyData[i] >= chart[i][0] and bodyData[i] <= chart[i][1]:
-            size_str += "M"
-        elif bodyData[i] >= chart[i][1] and bodyData[i] <= chart[i][2]:
-            size_str += "L"
-        elif bodyData[i] >= chart[i][2] and bodyData[i] <= chart[i][3]:
-            size_str += "XL"
-        else:
-            size_str += "2XL"
-
-    # descending order, because of index()
-    size_cnt.append(size_str.count("2XL"))
-    size_cnt.append(size_str.count("XL"))
-    size_cnt.append(size_str.count("L"))
-    size_cnt.append(size_str.count("M"))
-    size_cnt.append(size_str.count("S"))
-    print(size_str)
-    print(size_cnt)
-
-    recommend_size = size_cnt.index(max(size_cnt))
-    if recommend_size == 0:
-        size_result = "The fit size is 2XL and the loose size is 3XL"
-        print("INFO: The fit size is 2XL and the loose size is 3XL")
-    elif recommend_size == 1:
-        size_result = "The fit size is XL and the loose size is 2XL"
-        print("INFO: The fit size is XL and the loose size is 2XL")
-    elif recommend_size == 2:
-        size_result = "The fit size is L and the loose size is XL"
-        print("INFO: The fit size is L and the loose size is XL")
-    elif recommend_size == 3:
-        size_result = "The fit size is M and the loose size is L"
-        print("INFO: The fit size is M and the loose size is L")
-    else:
-        size_result = "The fit size is S and the loose size is M"
-        print("INFO: The fit size is S and the loose size is M")
-
-    bodyDataList = zip(bodyDataName , bodyData)
-    #get user selection of cloth image and data
-    """
-    cloth = NULL
-    cloth_data=NULL
-    if request.method == "POST":
-        print(request.POST['cloth'])
-        cloth=Cloth.objects.get(id=request.POST['cloth'])
-        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        print(cloth_data)
-    """
-    context = {
-        'bodyDataList': bodyDataList,
-        'pose_keypoints': pose_keypoints,
-        'pose_img': pose_img,
-        'selectedcloth_img': selectedcloth_img,
-        'size_result': size_result
-    }
-    
-    return render(request,'user_showResult.html', context)
-
 	
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
@@ -607,8 +536,9 @@ for k, v in state_dict.items():
     name = k[7:]  # remove `module.`
     new_state_dict[name] = v
 model.load_state_dict(new_state_dict)
-model.cpu()
 model.eval()
+
+ganModel=create_model()
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -638,110 +568,74 @@ def get_palette(num_cls):
             lab >>= 3
     return palette
 
-def getEdgeAndLebel(request):
-    clothImage_uri = None
-    clothEdgeImage_uri=None
-    humanImage_uri=None
-    predicted_label_uri=None
-    if request.method == 'POST':
-        # in case of POST: get the uploaded image from the form and process it
-        form = getEdgeAndLebelForm(request.POST, request.FILES)
-        if form.is_valid():
-            # retrieve the uploaded image and convert it to bytes (for PyTorch)
-            isShop=form.cleaned_data['isShop']
+def getEdgeAndLebel(clothImage,humanImage):
+    try:
+        #edge_part
+        img_gray=cv2.cvtColor(clothImage, cv2.COLOR_BGR2GRAY)
+        ret ,img_gray = cv2.threshold(img_gray,254, 255, cv2.THRESH_BINARY_INV)
+        img_gray = cv2.medianBlur(img_gray, 25)
+        img_gray=cv2.resize(img_gray,(192,256),interpolation=cv2.INTER_AREA)
+        #label_part
+        palette = get_palette(num_classes)
+        with torch.no_grad():
+            c, s = box2cs([0, 0, 192 - 1, 256 - 1])
+            r = 0
+            trans = get_affine_transform(c, s, r, input_size)
+            input = cv2.warpAffine(
+                humanImage,
+                trans,
+                (int(input_size[1]), int(input_size[0])),
+                flags=cv2.INTER_LINEAR,
+                borderMode=cv2.BORDER_CONSTANT,
+                borderValue=(0, 0, 0))
+
+            input = transform(input)
+            input = input.unsqueeze(0)
+            output = model(input)
+            upsample = torch.nn.Upsample(size=input_size, mode='bilinear', align_corners=True)
+            upsample_output = upsample(output[0][-1][0].unsqueeze(0))
+            upsample_output = upsample_output.squeeze()
+            upsample_output = upsample_output.permute(1, 2, 0)  # CHW -> HWC
+            logits_result = transform_logits(upsample_output.data.numpy(), c, s, 192, 256, input_size=input_size)
+            parsing_result = np.argmax(logits_result, axis=2)
+            #background
+            parsing_result=np.where(parsing_result==0,0,parsing_result)
+            #Pants
+            parsing_result=np.where(parsing_result==9,8,parsing_result)
+            parsing_result=np.where(parsing_result==12,8,parsing_result)
+            #hair
+            parsing_result=np.where(parsing_result==2,1,parsing_result)
+            #face
+            parsing_result=np.where(parsing_result==4,12,parsing_result)
+            parsing_result=np.where(parsing_result==13,12,parsing_result)
+            #upper-cloth
+            parsing_result=np.where(parsing_result==5,4,parsing_result)
+            parsing_result=np.where(parsing_result==6,4,parsing_result)
+            parsing_result=np.where(parsing_result==7,4,parsing_result)
+            parsing_result=np.where(parsing_result==10,4,parsing_result)
+            #Left-shoe
+            parsing_result=np.where(parsing_result==18,5,parsing_result)
+            #Right-shoe
+            parsing_result=np.where(parsing_result==19,6,parsing_result)
+            #Left_leg
+            parsing_result=np.where(parsing_result==16,9,parsing_result)
+            #Right_leg
+            parsing_result=np.where(parsing_result==17,10,parsing_result)
+            #Left_arm
+            parsing_result=np.where(parsing_result==14,11,parsing_result)
+            #Right_arm
+            parsing_result=np.where(parsing_result==15,13,parsing_result)
             
-            clothImage = form.cleaned_data['clothImage']
-            clothImage_bytes = clothImage.file.read()
-            humanImage = form.cleaned_data['humanImage']
-            humanImage_bytes = humanImage.file.read()
-            # convert and pass the image as base64 string to avoid storing it to DB or filesystem
-            encoded_img = base64.b64encode(clothImage_bytes).decode('ascii')
-            clothImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            clothImage=cv2.imdecode(clothImage,cv2.IMREAD_COLOR)
-            clothImage_uri = 'data:%s;base64,%s' % ('clothImage/jpg', encoded_img)
-            encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
-            humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
-            humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
+    except RuntimeError as re:
+        print(re)
 
-            # get predicted label with previously implemented PyTorch function
-            try:
-                #edge_part
-                img_gray=cv2.cvtColor(clothImage, cv2.COLOR_BGR2GRAY)
-                ret ,img_gray = cv2.threshold(img_gray,254, 255, cv2.THRESH_BINARY_INV)
-                img_gray = cv2.medianBlur(img_gray, 5)
-                img_gray=cv2.resize(img_gray,(192,256),interpolation=cv2.INTER_AREA)
-                retval, buffer = cv2.imencode('.jpg', img_gray)
-                jpg_as_text = base64.b64encode(buffer).decode('ascii')
-                clothEdgeImage_uri = 'data:%s;base64,%s' % ('clothEdgeImage/jepg', jpg_as_text)
-                #label_part
-                palette = get_palette(num_classes)
-                with torch.no_grad():
-                    c, s = box2cs([0, 0, 192 - 1, 256 - 1])
-                    r = 0
-                    trans = get_affine_transform(c, s, r, input_size)
-                    input = cv2.warpAffine(
-                        humanImage,
-                        trans,
-                        (int(input_size[1]), int(input_size[0])),
-                        flags=cv2.INTER_LINEAR,
-                        borderMode=cv2.BORDER_CONSTANT,
-                        borderValue=(0, 0, 0))
 
-                    input = transform(input)
-                    input = input.unsqueeze(0)
-                    output = model(input.cpu())
-                    upsample = torch.nn.Upsample(size=input_size, mode='bilinear', align_corners=True)
-                    upsample_output = upsample(output[0][-1][0].unsqueeze(0))
-                    upsample_output = upsample_output.squeeze()
-                    upsample_output = upsample_output.permute(1, 2, 0)  # CHW -> HWC
-                    logits_result = transform_logits(upsample_output.data.cpu().numpy(), c, s, 192, 256, input_size=input_size)
-                    parsing_result = np.argmax(logits_result, axis=2)
-                    #background
-                    parsing_result=np.where(parsing_result==0,0,parsing_result)
-                    #Pants
-                    parsing_result=np.where(parsing_result==9,8,parsing_result)
-                    parsing_result=np.where(parsing_result==12,8,parsing_result)
-                    #hair
-                    parsing_result=np.where(parsing_result==2,1,parsing_result)
-                    #face
-                    parsing_result=np.where(parsing_result==4,12,parsing_result)
-                    parsing_result=np.where(parsing_result==13,12,parsing_result)
-                    #upper-cloth
-                    parsing_result=np.where(parsing_result==5,4,parsing_result)
-                    parsing_result=np.where(parsing_result==6,4,parsing_result)
-                    parsing_result=np.where(parsing_result==7,4,parsing_result)
-                    parsing_result=np.where(parsing_result==10,4,parsing_result)
-                    #Left-shoe
-                    parsing_result=np.where(parsing_result==18,5,parsing_result)
-                    #Right-shoe
-                    parsing_result=np.where(parsing_result==19,6,parsing_result)
-                    #Left_leg
-                    parsing_result=np.where(parsing_result==16,9,parsing_result)
-                    #Right_leg
-                    parsing_result=np.where(parsing_result==17,10,parsing_result)
-                    #Left_arm
-                    parsing_result=np.where(parsing_result==14,11,parsing_result)
-                    #Right_arm
-                    parsing_result=np.where(parsing_result==15,13,parsing_result)
-                    retval, buffer = cv2.imencode('.jpg', parsing_result)
-                    jpg_as_text = base64.b64encode(buffer).decode('ascii')
-                    predicted_label_uri = 'data:%s;base64,%s' % ('predicted_label/jepg', jpg_as_text)
-                    
-            except RuntimeError as re:
-                print(re)
-        
-    context = {
-        'form': form,
-        'clothImage_uri': clothImage_uri,
-        'clothEdgeImage_uri':clothEdgeImage_uri,
-        'humanImage_uri':humanImage_uri,
-        'predicted_label_uri': predicted_label_uri,
-    }
-    if isShop:
+    return img_gray,parsing_result
+    '''if isShop:
         return render(request, 'cloth_preview.html', context)
     else:
         return render(request, 'user_showResult.html', context)
+        '''
     
 def changearm(old_label):
     label=old_label
@@ -762,7 +656,7 @@ def scale_width(img, target_width, method=Image.BICUBIC):
     return img.resize((w, h), method)    
 
 
-def __flip(img, flip):
+def fflip(img, flip):
     if flip:
         return img.transpose(Image.FLIP_LEFT_RIGHT)
     return img
@@ -772,8 +666,8 @@ def get_params(size):
     w, h = size
     new_h = h
     new_w = w
-    x = random.randint(0, np.maximum(0, new_w - opt.fineSize))
-    y = random.randint(0, np.maximum(0, new_h - opt.fineSize))
+    x = random.randint(0, np.maximum(0, new_w - 512))
+    y = random.randint(0, np.maximum(0, new_h - 512))
     #flip = random.random() > 0.5
     flip = 0
     return {'crop_pos': (x, y), 'flip': flip}    
@@ -783,7 +677,7 @@ def get_transform(params, method=Image.BICUBIC, normalize=True):
     transform_list.append(transforms.Lambda(lambda img: scale_width(img, 512, method)))
     osize = [256,192]
     transform_list.append(transforms.Resize(osize, method))  
-    transform_list.append(transforms.Lambda(lambda img: flip(img, params['flip'])))
+    transform_list.append(transforms.Lambda(lambda img: fflip(img, params['flip'])))
 
     transform_list += [transforms.ToTensor()]
 
@@ -814,109 +708,157 @@ def makePose(pose,params):
     return pose_map
     
 
-def generateImage(request):
-    generateImage_uri = None
-    if request.method == 'POST':
-        # in case of POST: get the uploaded image from the form and process it
-        form = generateImageForm(request.POST, request.FILES)
-        if form.is_valid():
-            # retrieve the uploaded image and convert it to bytes (for PyTorch)
-            SIZE=320
-            NC=14
-            # retrieve the uploaded image and convert it to bytes (for PyTorch)
-            isShop=form.cleaned_data['isShop']
-            labelImage = form.cleaned_data['label']
-            labelImage_bytes = labelImage.file.read()
-            humanImage = form.cleaned_data['image']
-            humanImage_bytes = humanImage.file.read()
-            colorImage = form.cleaned_data['color']
-            colorImage_bytes = colorImage.file.read()
-            colorMaskImage = form.cleaned_data['colorMask']
-            colorMaskImage_bytes = colorMaskImage.file.read()
-            edgeImage = form.cleaned_data['edge']
-            edgeImage_bytes = edgeImage.file.read()
-            maskImage = form.cleaned_data['mask']
-            maskImage_bytes = maskImage.file.read()
-            
-
-            
-            encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
-            humanImage=np.frombuffer(base64.b64decode(encoded_img),np.uint8)
-            humanImage=cv2.imdecode(humanImage,cv2.IMREAD_COLOR)
-            humanImage_uri = 'data:%s;base64,%s' % ('humanImage/jpg', encoded_img)
-            
-            
-            transform_A = get_transform(params, method=Image.NEAREST, normalize=False)
-            transform_B = get_transform(params)
-            
-            # convert and pass the image as base64 string to avoid storing it to DB or filesystem
-            encoded_img = base64.b64encode(labelImage_bytes).decode('ascii')
-            labelImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
-            labelTensor = transform_A(labelImage) * 255.0
-            
-            encoded_img = base64.b64encode(humanImage_bytes).decode('ascii')
-            humanImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('RGB')
-            humanTensor = transform_B(humanImage)   
-            
-            encoded_img = base64.b64encode(colorImage_bytes).decode('ascii')
-            colorImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('RGB')
-            colorTensor = transform_B(colorImage)
-            
-            encoded_img = base64.b64encode(colorMaskImage_bytes).decode('ascii')
-            colorMaskImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
-            colorMaskTensor = transform_A(colorMaskImage)
-            
-            encoded_img = base64.b64encode(edgeImage_bytes).decode('ascii')
-            edgeImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
-            edgeTensor = transform_A(edgeImage)
-            
-            encoded_img = base64.b64encode(maskImage_bytes).decode('ascii')
-            maskImage = Image.open(io.BytesIO(base64.b64decode(encoded_img))).convert('L')
-            maskTensor = transform_A(maskImage)
+def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints):
+    SIZE=320
+    NC=14
     
+    # convert and pass the image as base64 string to avoid storing it to DB or filesystem
+    labelImage = Image.fromarray(cv2.cvtColor(labelImg.astype(np.uint8),cv2.COLOR_BGR2RGB))
     
-            params=get_params(labelImage.size)
-            pose = form.cleaned_data['pose']
-            pose = makePose(pose,params)
-            
-            try:
-                # whether to collect output images
-                #save_fake = total_steps % 100 == display_delta
-                save_fake = True
+    params=get_params(labelImage.size)
+    pose = keypoints
+    pose = makePose(pose,params)
+    pose=pose.unsqueeze(0)
+    transform_A = get_transform(params, method=Image.NEAREST, normalize=False)
+    transform_B = get_transform(params)
+    labelImage=labelImage.convert('L')
+    labelTensor = transform_A(labelImage) * 255.0
+    labelTensor=labelTensor.unsqueeze(0)
+    
+    humanImage = Image.fromarray(cv2.cvtColor(poseImg,cv2.COLOR_BGR2RGB))
+    humanTensor = transform_B(humanImage)
+    humanTensor=humanTensor.unsqueeze(0)   
+    
+    colorImage = Image.fromarray(cv2.cvtColor(colorImg,cv2.COLOR_BGR2RGB))
+    colorTensor = transform_B(colorImage)
+    colorTensor=colorTensor.unsqueeze(0) 
+    
+    colorMaskTensor = transform_A(colorMaskImg)
+    
+    edgeImage = Image.fromarray(cv2.cvtColor(edgeImg,cv2.COLOR_BGR2RGB))
+    edgeImage=edgeImage.convert('L')
+    edgeTensor = transform_A(edgeImage)
+    edgeTensor=edgeTensor.unsqueeze(0) 
+    
+    maskTensor = transform_A(maskImg)
+    maskTensor=maskTensor.unsqueeze(0) 
+    
+    try:
+        # whether to collect output images
+        #save_fake = total_steps % 100 == display_delta
+        save_fake = True
 
-                ##add gaussian noise channel
-                ## wash the label
-                t_mask = torch.FloatTensor((labelTensor.cpu().numpy() == 7).astype(np.float64))
-                mask_clothes = torch.FloatTensor((labelTensor.cpu().numpy() == 4).astype(np.int32))
-                mask_fore = torch.FloatTensor((labelTensor.cpu().numpy() > 0).astype(np.int32))
-                img_fore = humanTensor * mask_fore
-                img_fore_wc = img_fore * mask_fore
-                all_clothes_label = changearm(labelTensor)
-                
-                ############## Forward Pass ######################
-                losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= model(Variable(labelTensor.cuda()),Variable(edgeTensor.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
-                                                                                                            ,Variable(colorTensor.cuda()),Variable(all_clothes_label.cuda()),Variable(humanTensor.cuda()),Variable(pose.cuda()) ,Variable(humanTensor.cuda()) ,Variable(mask_fore.cuda()))
-                
-                ### display output images
-                generateImage = fake_image.float().cuda()
-                generateImage = generateImage[0].squeeze()
-                # combine=c[0].squeeze()
-                cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
-                rgb=(cv_img*255).astype(np.uint8)
-                bgr=cv2.cvtColor(rgb,cv2.COLOR_RGB2BGR)
-                retval, buffer = cv2.imencode('.jpg', img_gray)
-                jpg_as_text = base64.b64encode(buffer).decode('ascii')
-                generateImage_uri = 'data:%s;base64,%s' % ('generateImage/jepg', jpg_as_text)
-                
-            except RuntimeError as re:
-                print(re)
+        ##add gaussian noise channel
+        ## wash the label
+        t_mask = torch.FloatTensor((labelTensor.cpu().numpy() == 7).astype(np.float64))
+        mask_clothes = torch.FloatTensor((labelTensor.cpu().numpy() == 4).astype(np.int32))
+        mask_fore = torch.FloatTensor((labelTensor.cpu().numpy() > 0).astype(np.int32))
+        img_fore = humanTensor * mask_fore
+        img_fore_wc = img_fore * mask_fore
+        all_clothes_label = changearm(labelTensor)
+          
+        ############## Forward Pass ######################
+        losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= ganModel(Variable(labelTensor.cuda()),Variable(edgeTensor.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
+                                                                                                    ,Variable(colorTensor.cuda()),Variable(all_clothes_label.cuda()),Variable(humanTensor.cuda()),Variable(pose.cuda()) ,Variable(humanTensor.cuda()) ,Variable(mask_fore.cuda()))
+        ### display output images
+        generateImage = fake_image.float().cuda()
+        generateImage = generateImage[0].squeeze()
+        # combine=c[0].squeeze()
+        cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
+        rgb=(cv_img*255).astype(np.uint8)
+        cv2.imwrite("test.jpg",cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+        Image.fromarray(rgb)
+        imgByteArr = io.BytesIO()
+        io_buf = base64.b64encode(imgByteArr.getvalue()).decode('ascii')
+        resultImage_uri = 'data:%s;base64,%s' % ('clothImage/jpg', io_buf)
+        return resultImage_uri
+    except RuntimeError as re:
+        print(re)
         
-    context = {
-        'form': form,
-        'generateImage_uri': humanImage_uri
-        #'generateImage_uri': generateImage_uri,
-    }
+        
+    '''
     if isShop:
         return render(request, 'cloth_preview.html', context)
     else:
         return render(request, 'user_showResult.html', context)
+    '''
+def user_showResult(request):
+    bodyDataName = ["肩寬","胸寬","身長"]
+    size_str = ""
+    size_cnt = []
+    size_result = ""
+    # size chart, need to import from database
+    chart = [[35, 40, 42, 43, 46],
+            [49, 53, 57, 58, 62],
+            [70, 75, 78, 81, 82],
+            [30, 32, 33, 34, 35]]
+
+    # compare with size chart
+    for i in range(0, 3):
+        bodyData[i] = np.round(bodyData[i],2)
+        bodyData[i] = float(bodyData[i])
+        if bodyData[i] <= chart[i][0]:
+            size_str += "S"
+        elif bodyData[i] >= chart[i][0] and bodyData[i] <= chart[i][1]:
+            size_str += "M"
+        elif bodyData[i] >= chart[i][1] and bodyData[i] <= chart[i][2]:
+            size_str += "L"
+        elif bodyData[i] >= chart[i][2] and bodyData[i] <= chart[i][3]:
+            size_str += "XL"
+        else:
+            size_str += "2XL"
+
+    # descending order, because of index()
+    size_cnt.append(size_str.count("2XL"))
+    size_cnt.append(size_str.count("XL"))
+    size_cnt.append(size_str.count("L"))
+    size_cnt.append(size_str.count("M"))
+    size_cnt.append(size_str.count("S"))
+    print(size_str)
+    print(size_cnt)
+
+    recommend_size = size_cnt.index(max(size_cnt))
+    if recommend_size == 0:
+        size_result = "The fit size is 2XL and the loose size is 3XL"
+        print("INFO: The fit size is 2XL and the loose size is 3XL")
+    elif recommend_size == 1:
+        size_result = "The fit size is XL and the loose size is 2XL"
+        print("INFO: The fit size is XL and the loose size is 2XL")
+    elif recommend_size == 2:
+        size_result = "The fit size is L and the loose size is XL"
+        print("INFO: The fit size is L and the loose size is XL")
+    elif recommend_size == 3:
+        size_result = "The fit size is M and the loose size is L"
+        print("INFO: The fit size is M and the loose size is L")
+    else:
+        size_result = "The fit size is S and the loose size is M"
+        print("INFO: The fit size is S and the loose size is M")
+
+    bodyDataList = zip(bodyDataName , bodyData)
+    #get user selection of cloth image and data
+    
+    #test
+    edgeImg,labelImg=getEdgeAndLebel(selectedcloth_img, pose_img)
+    maskImg=Image.open('00000.png').convert('L')
+    colorMaskImg=Image.open('00000_test.png').convert('L')
+    resultImage_uri=generateImage(labelImg, pose_img, selectedcloth_img, colorMaskImg, edgeImg, maskImg, pose_keypoints)
+    
+    """
+    cloth = NULL
+    cloth_data=NULL
+    if request.method == "POST":
+        print(request.POST['cloth'])
+        cloth=Cloth.objects.get(id=request.POST['cloth'])
+        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
+        print(cloth_data)
+    """
+    context = {
+        'bodyDataList': bodyDataList,
+        'pose_keypoints': pose_keypoints,
+        'pose_img': pose_img,
+        'selectedcloth_img': selectedcloth_img,
+        'size_result': size_result,
+        'resultImage':resultImage_uri,
+    }
+    
+    return render(request,'user_showResult.html', context)
