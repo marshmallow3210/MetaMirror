@@ -14,9 +14,16 @@
         </p>
         <p>
             {{ pose_keypoints }}<br>
+            {% comment %} 
             <img src="{{ pose_img }}"class="img-fluid" alt="Edge image"/><br>
             <img src="{{ selectedcloth_img }}"class="img-fluid" alt="Edge image"/><br>
             <img src="{{ resultImage }}"class="img-fluid" alt="Edge image"/><br>
+            {% endcomment %} 
+            <br>
+            <img id="user_pose_img" style="height:270px; width:480px;" >
+            <br>
+            <img id="user_selectedcloth_img" style="height:270px; width:480px;" >
+            <br>
         </p>
     </div>
     <div>
@@ -27,4 +34,10 @@
     </div>
     <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000'" value="Go Home"></input>
 </body>
+<script type="text/javascript">
+    function user_show_img_Function() {        
+        document.getElementById("user_pose_img").src="http://127.0.0.1:8000/user_pose_img";
+        document.getElementById("user_selectedcloth_img").src="http://127.0.0.1:8000/user_selectedcloth_img";
+    };
+</script>
 </html>

@@ -426,7 +426,23 @@ def user_showLidar(request):
     bodyData = runLidar()
     print(bodyData)
     return render(request,'user_showLidar.html',locals())
-	
+
+def user_pose():
+    ret, pose_frame = cv2.imencode('.jpeg', pose_img)
+    yield (b'--frame\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n' + pose_frame.tobytes() + b'\r\n')
+
+def user_pose_img(request):
+    return StreamingHttpResponse(user_pose(), content_type='multipart/x-mixed-replace; boundary=frame')
+
+def user_selectedcloth():
+    ret, selectedcloth_frame = cv2.imencode('.jpeg', selectedcloth_img)
+    yield (b'--frame\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n' + selectedcloth_frame.tobytes() + b'\r\n')
+
+def user_selectedcloth_img(request):
+    return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
+   
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
     context = {
