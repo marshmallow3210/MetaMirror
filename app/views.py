@@ -37,6 +37,7 @@ def user_manual(request):
     return render(request,'user_manual.html',locals())
 
 def runLidar():    
+
     # Create a pipeline
     pipeline = rs.pipeline()
     
@@ -296,6 +297,7 @@ def runLidar():
     # get bodyData
     global bodyData, pose_img, selectedcloth_img, pose_keypoints
     
+
     bodyData = [0,0,0,0]
     shoulderWidth = 0
     chestWidth = 0
@@ -399,6 +401,7 @@ def runLidar():
     with open('keypoints.json', 'w') as outfile:
         outfile.write(json_keypoints)
     
+    '''
     bodyData=[37,42,66]
     pose_img = cv2.imread('020000_0.jpg')
     selectedcloth_img = cv2.imread('020000_1.jpg')
@@ -420,8 +423,8 @@ def runLidar():
                     101.92592592592592, 79.17037037037036, 1.411500096321106,
                     82.96296296296296 ,84.85925925925926, 1.4270000457763672, 
                     109.98518518518519, 82.96296296296296, 1.4280000925064087]
-    
-    return bodyData
+    '''
+    return 0
              
 def openLidar(request):   
     return StreamingHttpResponse(runLidar(), content_type='multipart/x-mixed-replace; boundary=frame')
@@ -725,6 +728,7 @@ def makePose(pose,params):
     
 
 def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints):
+    
     SIZE=320
     NC=14
     
@@ -803,6 +807,7 @@ def user_showResult(request):
     size_str = ""
     size_cnt = []
     size_result = ""
+    bodyData=[37,42,66]
     # size chart, need to import from database
     chart = [[35, 40, 42, 43, 46],
             [49, 53, 57, 58, 62],
