@@ -37,7 +37,6 @@ def user_manual(request):
     return render(request,'user_manual.html',locals())
 
 def runLidar():    
-    '''
     # Create a pipeline
     pipeline = rs.pipeline()
     
@@ -293,12 +292,10 @@ def runLidar():
     print("INFO: The position of left hip is", hip_xyL, "px,", hip_depthL, "m")
     print("INFO: The position of right hip is", hip_xyR, "px,", hip_depthR, "m")
     
-    '''
             
     # get bodyData
     global bodyData, pose_img, selectedcloth_img, pose_keypoints
     
-    '''
     bodyData = [0,0,0,0]
     shoulderWidth = 0
     chestWidth = 0
@@ -401,7 +398,6 @@ def runLidar():
     # Using a JSON string
     with open('keypoints.json', 'w') as outfile:
         outfile.write(json_keypoints)
-    '''
     
     bodyData=[37,42,66]
     pose_img = cv2.imread('020000_0.jpg')
@@ -521,10 +517,6 @@ def cloth_preview(request):
     }
     context['text'].fields['image_ID'].initial=cloths.id    
     return render(request,'cloth_preview.html',context)
-'''
-
-鄭翊宏部分還未對接
-'''
 
 def xywh2cs(x, y, w, h):
     center = np.zeros((2), dtype=np.float32)
