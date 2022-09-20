@@ -98,11 +98,13 @@ def runLidar():
     hipPos = [0, 0, 0, 0] 
     elbowPos = [0, 0, 0, 0] 
     wristPos = [0, 0, 0, 0] 
-    
+    '''
     con = 10
     print('start')
+    
     while True:
         con -= 1
+        '''
         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
 
@@ -121,18 +123,20 @@ def runLidar():
         color_image = np.asanyarray(color_frame.get_data())
         '''
         
-    color_image = cv2.imread('020000_0.jpg')
-    
-    # 解碼圖片
-    decode_frames = cv2.imencode('.jpeg', color_image)
-    decode_array = decode_frames[1]
+        color_image = cv2.imread('020000_0.jpg')
+        
+        # 解碼圖片
+        decode_frames = cv2.imencode('.jpeg', color_image)
+        decode_array = decode_frames[1]
 
-    # 轉換成byte，存在迭代器中
-    yield (b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' + decode_array.tobytes() + b'\r\n')		
-    print('decode_array type is', type(decode_array))
-    
-    '''
+        # 轉換成byte，存在迭代器中
+        yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + decode_array.tobytes() + b'\r\n')		
+        print('decode_array type is', type(decode_array))
+        
+        if con <= 0:
+            break
+        '''
         results = holistic.process(color_image)
         
         if  con < 2 and con > 0 and results.pose_landmarks:
