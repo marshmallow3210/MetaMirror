@@ -29,7 +29,7 @@ def user_manual(request):
     return render(request,'user_manual.html',locals())
 
 def runLidar():    
-    
+    '''
     # Create a pipeline
     pipeline = rs.pipeline()
     
@@ -111,16 +111,20 @@ def runLidar():
 
         depth_image = np.asanyarray(aligned_depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
+        '''
+        
+    color_image = cv2.imread('020000_0.jpg')
+    
+    # 解碼圖片
+    decode_frames = cv2.imencode('.jpeg', color_image)
+    decode_array = decode_frames[1]
 
-        # 解碼圖片
-        decode_frames = cv2.imencode('.jpeg', color_image)
-        decode_array = decode_frames[1]
-
-        # 轉換成byte，存在迭代器中
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + decode_array.tobytes() + b'\r\n')		
-        print('decode_array type is', type(decode_array))
-
+    # 轉換成byte，存在迭代器中
+    yield (b'--frame\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n' + decode_array.tobytes() + b'\r\n')		
+    print('decode_array type is', type(decode_array))
+    
+    '''
         results = holistic.process(color_image)
         
         if  con < 2 and con > 0 and results.pose_landmarks:
@@ -285,7 +289,7 @@ def runLidar():
     print("INFO: The position of left hip is", hip_xyL, "px,", hip_depthL, "m")
     print("INFO: The position of right hip is", hip_xyR, "px,", hip_depthR, "m")
     
-    
+    '''
             
     # get bodyData
     global bodyData, pose_img, selectedcloth_img, pose_keypoints
@@ -295,7 +299,8 @@ def runLidar():
     shoulderWidth = 0
     chestWidth = 0
     clothingLength = 0
-
+    
+    '''
     # 0-shoulderWidth
     shoulderWidth = ((shoulderxyzL[0]-shoulderxyzR[0]) ** 2 
             + (shoulderxyzL[1]-shoulderxyzR[1]) ** 2 
@@ -394,7 +399,6 @@ def runLidar():
     with open('keypoints.json', 'w') as outfile:
         outfile.write(json_keypoints)
     
-    '''
     bodyData=[37,42,66]
     pose_img = cv2.imread('020000_0.jpg')
     selectedcloth_img = cv2.imread('020000_1.jpg')
@@ -427,21 +431,21 @@ def user_showLidar(request):
     # print(bodyData)
     return render(request,'user_showLidar.html',locals())
 
-def user_pose():
-    ret, pose_frame = cv2.imencode('.jpeg', pose_img)
-    yield (b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' + pose_frame.tobytes() + b'\r\n')
+# def user_pose():
+#     ret, pose_frame = cv2.imencode('.jpeg', pose_img)
+#     yield (b'--frame\r\n'
+#             b'Content-Type: image/jpeg\r\n\r\n' + pose_frame.tobytes() + b'\r\n')
 
-def user_pose_img(request):
-    return StreamingHttpResponse(user_pose(), content_type='multipart/x-mixed-replace; boundary=frame')
+# def user_pose_img(request):
+#     return StreamingHttpResponse(user_pose(), content_type='multipart/x-mixed-replace; boundary=frame')
 
-def user_selectedcloth():
-    ret, selectedcloth_frame = cv2.imencode('.jpeg', selectedcloth_img)
-    yield (b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' + selectedcloth_frame.tobytes() + b'\r\n')
+# def user_selectedcloth():
+#     ret, selectedcloth_frame = cv2.imencode('.jpeg', selectedcloth_img)
+#     yield (b'--frame\r\n'
+#             b'Content-Type: image/jpeg\r\n\r\n' + selectedcloth_frame.tobytes() + b'\r\n')
 
-def user_selectedcloth_img(request):
-    return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
+# def user_selectedcloth_img(request):
+#     return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
     
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
