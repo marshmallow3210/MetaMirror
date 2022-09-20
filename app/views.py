@@ -432,7 +432,7 @@ def openLidar(request):
 
 def user_showLidar(request):
     bodyData = runLidar()
-    print(bodyData)
+    # print(bodyData)
     return render(request,'user_showLidar.html',locals())
 
 def user_pose():
@@ -450,7 +450,7 @@ def user_selectedcloth():
 
 def user_selectedcloth_img(request):
     return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
-   
+    
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
     context = {
