@@ -12,7 +12,7 @@ urlpatterns = [
     path('openLidar',views.openLidar,name='openLidar'), # Lidar影像畫面
     path('user_showLidar',views.user_showLidar,name='user_showLidar'), # user執行Lidar的頁面
     path('user_showResult',views.user_showResult,name='user_showResult'),
-    path('user_pose_img',views.user_pose_img,name='user_pose_img'),
-    path('user_selectedcloth_img',views.user_selectedcloth_img,name='user_selectedcloth_img'),
+    #path('user_pose_img',views.user_pose_img,name='user_pose_img'),
+    #path('user_selectedcloth_img',views.user_selectedcloth_img,name='user_selectedcloth_img'),
     path('apiTest',views.apiTest,name='apiTest'),
 ]

@@ -37,6 +37,7 @@ def user_manual(request):
     return render(request,'user_manual.html',locals())
 
 def runLidar():    
+    print(123)
     '''
     # Create a pipeline
     pipeline = rs.pipeline()
@@ -124,11 +125,11 @@ def runLidar():
         '''
         
         color_image = cv2.imread('020000_0.jpg')
-        
+        print(456)
         # 解碼圖片
         decode_frames = cv2.imencode('.jpeg', color_image)
         decode_array = decode_frames[1]
-
+        print(789)
         # 轉換成byte，存在迭代器中
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + decode_array.tobytes() + b'\r\n')		
@@ -435,12 +436,12 @@ def runLidar():
     '''
     return 0
              
-def openLidar(request):   
+def openLidar(request):
+    print(112)
     return StreamingHttpResponse(runLidar(), content_type='multipart/x-mixed-replace; boundary=frame')
 
 def user_showLidar(request):
     bodyData = runLidar()
-    # print(bodyData)
     return render(request,'user_showLidar.html',locals())
 
 # def user_pose():
