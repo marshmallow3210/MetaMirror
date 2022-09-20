@@ -37,8 +37,6 @@ def user_manual(request):
     return render(request,'user_manual.html',locals())
 
 def runLidar():    
-    print(123)
-    '''
     # Create a pipeline
     pipeline = rs.pipeline()
     
@@ -99,13 +97,13 @@ def runLidar():
     hipPos = [0, 0, 0, 0] 
     elbowPos = [0, 0, 0, 0] 
     wristPos = [0, 0, 0, 0] 
-    '''
+    
     con = 10
     print('start')
     
     while True:
         con -= 1
-        '''
+        
         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
 
@@ -122,22 +120,15 @@ def runLidar():
 
         depth_image = np.asanyarray(aligned_depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
-        '''
         
-        color_image = cv2.imread('020000_0.jpg')
-        print(456)
         # 解碼圖片
         decode_frames = cv2.imencode('.jpeg', color_image)
         decode_array = decode_frames[1]
-        print(789)
         # 轉換成byte，存在迭代器中
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + decode_array.tobytes() + b'\r\n')		
         print('decode_array type is', type(decode_array))
         
-        if con <= 0:
-            break
-        '''
         results = holistic.process(color_image)
         
         if  con < 2 and con > 0 and results.pose_landmarks:
@@ -302,18 +293,14 @@ def runLidar():
     print("INFO: The position of left hip is", hip_xyL, "px,", hip_depthL, "m")
     print("INFO: The position of right hip is", hip_xyR, "px,", hip_depthR, "m")
     
-    '''
-            
     # get bodyData
     global bodyData, pose_img, selectedcloth_img, pose_keypoints
     
-
     bodyData = [0,0,0,0]
     shoulderWidth = 0
     chestWidth = 0
     clothingLength = 0
     
-    '''
     # 0-shoulderWidth
     shoulderWidth = ((shoulderxyzL[0]-shoulderxyzR[0]) ** 2 
             + (shoulderxyzL[1]-shoulderxyzR[1]) ** 2 
@@ -433,7 +420,7 @@ def runLidar():
                     101.92592592592592, 79.17037037037036, 1.411500096321106,
                     82.96296296296296 ,84.85925925925926, 1.4270000457763672, 
                     109.98518518518519, 82.96296296296296, 1.4280000925064087]
-    '''
+    
     return 0
              
 def openLidar(request):
