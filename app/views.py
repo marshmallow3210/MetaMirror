@@ -16,13 +16,21 @@ from collections import OrderedDict
 from PIL import Image,ImageDraw
 from skimage import measure, filters
 from django.shortcuts import render
-from django.http import HttpResponse, StreamingHttpResponse
+from django.core.handlers.wsgi import WSGIRequest
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse, StreamingHttpResponse,JsonResponse
 from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
 from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
 from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
+
+@csrf_exempt
+def apiTest(request:WSGIRequest):
+    if request.method =='GET':
+        return JsonResponse({'status':'succeed','context':'hello worldd'})
+
 def home(request):
     return render(request,'home.html',locals())
 def user_manual(request):
@@ -294,7 +302,7 @@ def runLidar():
     # get bodyData
     global bodyData, pose_img, selectedcloth_img, pose_keypoints
     
-    
+
     bodyData = [0,0,0,0]
     shoulderWidth = 0
     chestWidth = 0
@@ -517,10 +525,6 @@ def cloth_preview(request):
     }
     context['text'].fields['image_ID'].initial=cloths.id    
     return render(request,'cloth_preview.html',context)
-'''
-
-鄭翊宏部分還未對接
-'''
 
 def xywh2cs(x, y, w, h):
     center = np.zeros((2), dtype=np.float32)
