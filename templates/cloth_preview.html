@@ -19,8 +19,9 @@
                     {% endif %}
                 </td>
                 <td>
-                    cloth_preview img
-                    <img src="">
+                    {% if resultImage is not None %}
+                    <img src="{{ resultImage }}" alt="cloth_preview img">
+                    {% endif %}
                 </td>
             </tr>
             <tr>

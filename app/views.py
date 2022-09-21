@@ -492,32 +492,6 @@ def shop_manual(request):
     return render(request,'shop_manual.html',{})
 
 
-def cloth_preview(request):
-    form = ClothesDataModelForm()
-    cloths = Cloth.objects.all()
-    if(len(cloths)>=1):
-        cloths=cloths[len(cloths)-1]
-    else:
-        cloths=cloths[0]
-    print(cloths.id)
-
-    if request.method == "POST":
-        form = ClothesDataModelForm(request.POST)
-        #print(request.POST['image_ID'])
-        if form.is_valid():
-            print('yes')
-            cloth_info=form.cleaned_data
-            cloth_info['image_ID']=cloths.id
-            print(cloth_info)
-            Cloth_data.objects.create(**cloth_info)
-            
-    context = {
-        'app': cloths,
-        'text': form
-    }
-    context['text'].fields['image_ID'].initial=cloths.id    
-    return render(request,'cloth_preview.html',context)
-
 def xywh2cs(x, y, w, h):
     center = np.zeros((2), dtype=np.float32)
     center[0] = x + w * 0.5
@@ -880,3 +854,57 @@ def user_showResult(request):
     }
     
     return render(request,'user_showResult.html', context)
+
+    
+def cloth_preview(request):
+    form = ClothesDataModelForm()
+    cloths = Cloth.objects.all()
+    if(len(cloths)>=1):
+        cloths=cloths[len(cloths)-1]
+    else:
+        cloths=cloths[0]
+    print(cloths.image)
+
+    model_img = cv2.imread('020000_0.jpg')
+    cloth_img = cv2.imread('media/'+cloths.image)
+    maskImg=Image.open('00000.png').convert('L')
+    colorMaskImg=Image.open('00000_test.png').convert('L')
+    p_keypoints=[95.76296296296296 ,85.33333333333333, 1.404750108718872, 
+                    99.55555555555556, 130.84444444444443, 1.4445000886917114, 
+                    66.84444444444445, 131.31851851851852, 1.4512500762939453, 
+                    41.24444444444445 ,180.62222222222223, 1.443000078201294, 
+                    10.42962962962963, 221.86666666666667, 1.4037500619888306, 
+                    132.26666666666668, 130.37037037037038, 1.4852501153945923, 
+                    156.44444444444446, 183.46666666666667, 1.567500114440918, 
+                    188.2074074074074, 232.2962962962963, 1.564500093460083, 
+                    79.17037037037036, 212.85925925925926, 1.3842500448226929, 
+                    0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0,
+                    116.62222222222222, 214.28148148148148, 1.409250020980835,
+                    0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 
+                    87.70370370370371 ,79.64444444444445, 1.41225004196167, 
+                    101.92592592592592, 79.17037037037036, 1.411500096321106,
+                    82.96296296296296 ,84.85925925925926, 1.4270000457763672, 
+                    109.98518518518519, 82.96296296296296, 1.4280000925064087]
+
+    if request.method == "POST":
+        form = ClothesDataModelForm(request.POST)
+        #print(request.POST['image_ID'])
+        if form.is_valid():
+            print('yes')
+            cloth_info=form.cleaned_data
+            cloth_info['image_ID']=cloths.id
+            print(cloth_info)
+            Cloth_data.objects.create(**cloth_info)
+            img_gray,parsing_result=getEdgeAndLebel(cloth_img,model_img)
+            resultImage=generateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints,)
+            #print(resultImage)
+
+    context = {
+        'app': cloths,
+        'text': form,
+        'resultImage':resultImage
+    }
+    context['text'].fields['image_ID'].initial=cloths.id    
+    return render(request,'cloth_preview.html',context)
