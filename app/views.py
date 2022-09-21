@@ -866,7 +866,7 @@ def cloth_preview(request):
     print(cloths.image)
 
     model_img = cv2.imread('020000_0.jpg')
-    cloth_img = cv2.imread('media/'+cloths.image)
+    cloth_img = cv2.imread('media/'+str(cloths.image))
     maskImg=Image.open('00000.png').convert('L')
     colorMaskImg=Image.open('00000_test.png').convert('L')
     p_keypoints=[95.76296296296296 ,85.33333333333333, 1.404750108718872, 
