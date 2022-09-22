@@ -886,15 +886,13 @@ def cloth_preview(request):
         form = ClothesDataModelForm(request.POST)
         #print(request.POST['image_ID'])
         if form.is_valid():
-            print('yes')
             cloth_info=form.cleaned_data
             cloth_info['image_ID']=cloths.id
-            print(cloth_info)
+            print("cloth_info:",cloth_info)
             Cloth_data.objects.create(**cloth_info)
             img_gray,parsing_result=getEdgeAndLebel(cloth_img,model_img)
-            print(img_gray,parsing_result)
             resultImage=generateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints)
-            print(resultImage)
+            print("result_img:",resultImage)
 
     context = {
         'app': cloths,
