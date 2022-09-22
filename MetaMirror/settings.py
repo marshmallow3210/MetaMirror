@@ -109,11 +109,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://25.34.84.212:8000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://25.69.108.176:8000"
+    "http://25.69.108.176:8000",
 ]
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGIN_REGEXES = [
     'http://25.69.108.176:8000',
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
 ]
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
