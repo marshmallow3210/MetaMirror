@@ -705,7 +705,6 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
     
     # convert and pass the image as base64 string to avoid storing it to DB or filesystem
     labelImage = Image.fromarray(cv2.cvtColor(labelImg.astype(np.uint8),cv2.COLOR_BGR2RGB))
-    
     params=get_params(labelImage.size)
     pose = keypoints
     pose = makePose(pose,params)
@@ -715,22 +714,18 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
     labelImage=labelImage.convert('L')
     labelTensor = transform_A(labelImage) * 255.0
     labelTensor=labelTensor.unsqueeze(0)
-    
     humanImage = Image.fromarray(cv2.cvtColor(poseImg,cv2.COLOR_BGR2RGB))
     humanTensor = transform_B(humanImage)
     humanTensor=humanTensor.unsqueeze(0)   
-    
     colorImage = Image.fromarray(cv2.cvtColor(colorImg,cv2.COLOR_BGR2RGB))
     colorTensor = transform_B(colorImage)
     colorTensor=colorTensor.unsqueeze(0) 
-    
     colorMaskTensor = transform_A(colorMaskImg)
     
     edgeImage = Image.fromarray(cv2.cvtColor(edgeImg,cv2.COLOR_BGR2RGB))
     edgeImage=edgeImage.convert('L')
     edgeTensor = transform_A(edgeImage)
     edgeTensor=edgeTensor.unsqueeze(0) 
-    
     maskTensor = transform_A(maskImg)
     maskTensor=maskTensor.unsqueeze(0) 
     
@@ -738,7 +733,6 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         # whether to collect output images
         #save_fake = total_steps % 100 == display_delta
         save_fake = True
-
         ##add gaussian noise channel
         ## wash the label
         t_mask = torch.FloatTensor((labelTensor.cpu().numpy() == 7).astype(np.float64))
@@ -747,7 +741,6 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         img_fore = humanTensor * mask_fore
         img_fore_wc = img_fore * mask_fore
         all_clothes_label = changearm(labelTensor)
-          
         ############## Forward Pass ######################
         losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= ganModel(Variable(labelTensor.cuda()),Variable(edgeTensor.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
                                                                                                     ,Variable(colorTensor.cuda()),Variable(all_clothes_label.cuda()),Variable(humanTensor.cuda()),Variable(pose.cuda()) ,Variable(humanTensor.cuda()) ,Variable(mask_fore.cuda()))
@@ -758,8 +751,9 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
         rgb=(cv_img*255).astype(np.uint8)
         cv2.imwrite("test.jpg",cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
-        Image.fromarray(rgb)
+        rgb=Image.open("test.jpg")
         imgByteArr = io.BytesIO()
+        rgb.save(imgByteArr, format='JPEG')
         io_buf = base64.b64encode(imgByteArr.getvalue()).decode('ascii')
         resultImage_uri = 'data:%s;base64,%s' % ('clothImage/jpg', io_buf)
         return resultImage_uri
@@ -898,8 +892,9 @@ def cloth_preview(request):
             print(cloth_info)
             Cloth_data.objects.create(**cloth_info)
             img_gray,parsing_result=getEdgeAndLebel(cloth_img,model_img)
-            resultImage=generateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints,)
-            #print(resultImage)
+            print(img_gray,parsing_result)
+            resultImage=generateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints)
+            print(resultImage)
 
     context = {
         'app': cloths,
