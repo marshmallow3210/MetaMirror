@@ -22,8 +22,7 @@ from app.views import openLidar
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('app.urls')),
-    re_path(r'^openLidar/$', openLidar)
+    path('', include('app.urls'))
 ]
 
 if settings.DEBUG:
