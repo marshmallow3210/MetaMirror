@@ -17,13 +17,14 @@ from django.contrib import admin
 from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from app.views import user_showLidar
 
 #Add URL maps to redirect the base URL to our application
 from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(url='/user_showLidar/')),
+    re_path(r'^user_showLidar/$', user_showLidar),
     path('', include('app.urls'))
 ]
 

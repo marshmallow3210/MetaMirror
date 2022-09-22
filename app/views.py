@@ -426,11 +426,11 @@ def runLidar():
 def openLidar(request):
     print(112)
     return StreamingHttpResponse(runLidar(), content_type='multipart/x-mixed-replace; boundary=frame')
-
-def user_showLidar(request):
-    bodyData = runLidar()
-    return render(request,'user_showLidar.html',locals())
 '''
+def user_showLidar(request):
+    # bodyData = runLidar()
+    return render(request,'user_showLidar.html',locals())
+
 # def user_pose():
 #     ret, pose_frame = cv2.imencode('.jpeg', pose_img)
 #     yield (b'--frame\r\n'
