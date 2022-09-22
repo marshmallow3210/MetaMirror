@@ -10,13 +10,8 @@ urlpatterns = [
     path('',views.home,name='home'),
     path('user_manual',views.user_manual,name='user_manual'),
     #path('openLidar',views.openLidar,name='openLidar'), # Lidar影像畫面
-<<<<<<< HEAD
     #path('user_showLidar',views.user_showLidar,name='user_showLidar'), # user執行Lidar的頁面
     #path('user_showResult',views.user_showResult,name='user_showResult'),
-=======
-    path('user_showLidar',views.user_showLidar,name='user_showLidar'), # user執行Lidar的頁面
-    path('user_showResult',views.user_showResult,name='user_showResult'),
->>>>>>> a6c49bb1b35096e0a1b7671a9ef831810b0265ec
     #path('user_pose_img',views.user_pose_img,name='user_pose_img'),
     #path('user_selectedcloth_img',views.user_selectedcloth_img,name='user_selectedcloth_img'),
     path('apiTest',views.apiTest,name='apiTest'),
