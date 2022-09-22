@@ -35,7 +35,7 @@ def home(request):
     return render(request,'home.html',locals())
 def user_manual(request):
     return render(request,'user_manual.html',locals())
-
+'''
 def runLidar():    
     # Create a pipeline
     pipeline = rs.pipeline()
@@ -430,7 +430,7 @@ def openLidar(request):
 def user_showLidar(request):
     bodyData = runLidar()
     return render(request,'user_showLidar.html',locals())
-
+'''
 # def user_pose():
 #     ret, pose_frame = cv2.imencode('.jpeg', pose_img)
 #     yield (b'--frame\r\n'
@@ -773,6 +773,8 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
     else:
         return render(request, 'user_showResult.html', context)
     '''
+    
+'''
 def user_showResult(request):
     bodyDataName = ["肩寬","胸寬","身長"]
     size_str = ""
@@ -854,6 +856,7 @@ def user_showResult(request):
     }
     
     return render(request,'user_showResult.html', context)
+'''
 
     
 def cloth_preview(request):
