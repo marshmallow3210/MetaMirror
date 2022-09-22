@@ -768,7 +768,6 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         return render(request, 'user_showResult.html', context)
     '''
     
-'''
 def user_showResult(request):
     bodyDataName = ["肩寬","胸寬","身長"]
     size_str = ""
@@ -825,13 +824,13 @@ def user_showResult(request):
     bodyDataList = zip(bodyDataName , bodyData)
     #get user selection of cloth image and data
     
+    """
     #test
     edgeImg,labelImg=getEdgeAndLebel(selectedcloth_img, pose_img)
     maskImg=Image.open('00000.png').convert('L')
     colorMaskImg=Image.open('00000_test.png').convert('L')
     resultImage_uri=generateImage(labelImg, pose_img, selectedcloth_img, colorMaskImg, edgeImg, maskImg, pose_keypoints)
     
-    """
     cloth = NULL
     cloth_data=NULL
     if request.method == "POST":
@@ -842,15 +841,14 @@ def user_showResult(request):
     """
     context = {
         'bodyDataList': bodyDataList,
-        'pose_keypoints': pose_keypoints,
-        'pose_img': pose_img,
-        'selectedcloth_img': selectedcloth_img,
+        #'pose_keypoints': pose_keypoints,
+        #'pose_img': pose_img,
+        #'selectedcloth_img': selectedcloth_img,
         'size_result': size_result,
-        'resultImage':resultImage_uri,
+        #'resultImage':resultImage_uri,
     }
     
     return render(request,'user_showResult.html', context)
-'''
 
     
 def cloth_preview(request):
