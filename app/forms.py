@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data,KeypointsModel
 
 class ClothesModelForm(forms.ModelForm):
     class Meta:
@@ -8,7 +8,15 @@ class ClothesModelForm(forms.ModelForm):
         widgets={
             'image': forms.FileInput(attrs={'class': 'form-control-file'})
         }
-
+        
+class KeypointsModelForm(forms.ModelForm):
+    class Meta:
+        model = KeypointsModel
+        fields=('image',)
+        widgets={
+            'image': forms.FileInput(attrs={'class': 'form-control-file'})
+        }
+        
 class ClothesDataModelForm(forms.ModelForm):
     
     class Meta:

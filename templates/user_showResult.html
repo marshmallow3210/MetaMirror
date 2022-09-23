@@ -27,7 +27,11 @@
             {{ size_result }}
         </p>
     </div>
-    <button onclick="javascript:location.href='http://25.69.108.176:8000/'">Go Home</button>
+    <form method="get" action="">
+        {% csrf_token %}
+        <button type="submit">Go Home</button>
+    </form>
+    {% comment %} <button onclick="javascript:location.href='http://25.69.108.176:8000/'">Go Home</button> {% endcomment %}
 </body>
 <script type="text/javascript">
     function user_show_img_Function() {        
