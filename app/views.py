@@ -19,8 +19,8 @@ from django.shortcuts import render
 from django.core.handlers.wsgi import WSGIRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, StreamingHttpResponse,JsonResponse
-from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
-from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
+from .forms import ClothesModelForm,ClothesDataModelForm, KeypointsModelForm,getEdgeAndLebelForm,generateImageForm
+from .models import Cloth,Cloth_data, KeypointsModel,getEdgeAndLebel_data,generateImage_data
 from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
@@ -431,26 +431,22 @@ def user_showLidar(request):
     # bodyData = runLidar()
     return render(request,'user_showLidar.html',locals())
 
-# def user_pose():
-#     ret, pose_frame = cv2.imencode('.jpeg', pose_img)
-#     yield (b'--frame\r\n'
-#             b'Content-Type: image/jpeg\r\n\r\n' + pose_frame.tobytes() + b'\r\n')
-
-# def user_pose_img(request):
-#     return StreamingHttpResponse(user_pose(), content_type='multipart/x-mixed-replace; boundary=frame')
-
-# def user_selectedcloth():
-#     ret, selectedcloth_frame = cv2.imencode('.jpeg', selectedcloth_img)
-#     yield (b'--frame\r\n'
-#             b'Content-Type: image/jpeg\r\n\r\n' + selectedcloth_frame.tobytes() + b'\r\n')
-
-# def user_selectedcloth_img(request):
-#     return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
-    
+@csrf_exempt
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
+    keypoints = KeypointsModel.objects.all()
+    form = KeypointsModelForm()
+    if request.method == "POST":
+        form = KeypointsModelForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            if(len(keypoints)>=1):
+                keypoints=keypoints[len(keypoints)-1]
+            else:
+                keypoints=keypoints[0]
     context = {
         'app': cloths,
+        'keypoints': keypoints
     }
     return render(request, 'user_selectCloth.html', context)
 
