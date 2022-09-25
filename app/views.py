@@ -24,6 +24,7 @@ from .models import Cloth,Cloth_data, KeypointsModel,getEdgeAndLebel_data,genera
 from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
 
 @csrf_exempt
@@ -431,7 +432,22 @@ def user_showLidar(request):
     # bodyData = runLidar()
     return render(request,'user_showLidar.html',locals())
 
-@csrf_exempt
+# def user_pose():
+#     ret, pose_frame = cv2.imencode('.jpeg', pose_img)
+#     yield (b'--frame\r\n'
+#             b'Content-Type: image/jpeg\r\n\r\n' + pose_frame.tobytes() + b'\r\n')
+
+# def user_pose_img(request):
+#     return StreamingHttpResponse(user_pose(), content_type='multipart/x-mixed-replace; boundary=frame')
+
+# def user_selectedcloth():
+#     ret, selectedcloth_frame = cv2.imencode('.jpeg', selectedcloth_img)
+#     yield (b'--frame\r\n'
+#             b'Content-Type: image/jpeg\r\n\r\n' + selectedcloth_frame.tobytes() + b'\r\n')
+
+# def user_selectedcloth_img(request):
+#     return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
+    
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
     keypoints = KeypointsModel.objects.all()
@@ -483,10 +499,13 @@ def cloth_data(request):
     }
     context['form'].fields['image_ID'].initial=cloths.id 
     return render(request,'cloth_data.html',context)
-    
+
+@xframe_options_sameorigin      
 def shop_manual(request):
     return render(request,'shop_manual.html',{})
 
+def shop_step(request):
+    return render(request,'shop_step.html',{}) 
 
 def xywh2cs(x, y, w, h):
     center = np.zeros((2), dtype=np.float32)
@@ -820,6 +839,14 @@ def user_showResult(request):
     bodyDataList = zip(bodyDataName , bodyData)
     #get user selection of cloth image and data
     
+    cloth = NULL
+    cloth_data=NULL
+    if request.method == "POST":
+        print(request.POST['cloth'])
+        cloth=Cloth.objects.get(id=request.POST['cloth'])
+        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
+        print(cloth_data)
+
     """
     #test
     edgeImg,labelImg=getEdgeAndLebel(selectedcloth_img, pose_img)
@@ -839,9 +866,10 @@ def user_showResult(request):
         'bodyDataList': bodyDataList,
         #'pose_keypoints': pose_keypoints,
         #'pose_img': pose_img,
-        #'selectedcloth_img': selectedcloth_img,
         'size_result': size_result,
         #'resultImage':resultImage_uri,
+        'selectedcloth_img':cloth,
+        'text':cloth_data
     }
     
     return render(request,'user_showResult.html', context)
