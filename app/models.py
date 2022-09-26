@@ -5,8 +5,6 @@ class Cloth(models.Model):
     #衣服圖片
     image = models.ImageField(upload_to='cloth/', blank=False, null=False)
     upload_date = models.DateField(default=timezone.now)
-class KeypointsModel(models.Model):
-    image = models.ImageField()
 
 class Cloth_data(models.Model):
     #衣服資訊

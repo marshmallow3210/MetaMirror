@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 import cv2
 import time
 import json
@@ -428,42 +429,20 @@ def openLidar(request):
     print(112)
     return StreamingHttpResponse(runLidar(), content_type='multipart/x-mixed-replace; boundary=frame')
 '''
+'''
 def user_showLidar(request):
     # bodyData = runLidar()
     return render(request,'user_showLidar.html',locals())
+'''
 
-# def user_pose():
-#     ret, pose_frame = cv2.imencode('.jpeg', pose_img)
-#     yield (b'--frame\r\n'
-#             b'Content-Type: image/jpeg\r\n\r\n' + pose_frame.tobytes() + b'\r\n')
-
-# def user_pose_img(request):
-#     return StreamingHttpResponse(user_pose(), content_type='multipart/x-mixed-replace; boundary=frame')
-
-# def user_selectedcloth():
-#     ret, selectedcloth_frame = cv2.imencode('.jpeg', selectedcloth_img)
-#     yield (b'--frame\r\n'
-#             b'Content-Type: image/jpeg\r\n\r\n' + selectedcloth_frame.tobytes() + b'\r\n')
-
-# def user_selectedcloth_img(request):
-#     return StreamingHttpResponse(user_selectedcloth(), content_type='multipart/x-mixed-replace; boundary=frame')
-    
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
-    keypoints = KeypointsModel.objects.all()
-    form = KeypointsModelForm()
+    json_data = ""
     if request.method == "POST":
-        form = KeypointsModelForm(request.POST, request.FILES)
         json_data = request.POST.get("json_data", "")
-        if form.is_valid():
-            form.save()
-            if(len(keypoints)>=1):
-                keypoints=keypoints[len(keypoints)-1]
-            else:
-                keypoints=keypoints[0]
+    print(json_data)
     context = {
         'app': cloths,
-        'keypoints': keypoints,
         'json_data': json_data
     }
     return render(request, 'user_selectCloth.html', context)
@@ -866,7 +845,7 @@ def user_showResult(request):
     #get user selection of cloth image and data
     
     cloth = NULL
-    cloth_data=NULL
+    cloth_data = NULL
     if request.method == "POST":
         print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])

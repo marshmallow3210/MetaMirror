@@ -13,12 +13,6 @@
                 user_selectCloth
             </h1>
         </div>
-        {% for keypoints in keypoints %}
-            {% if keypoints.image %}
-                <img  class="card-img-top" src="{{ keypoints.image.url }}"/>   
-            {% endif %}
-        {% endfor %}
-
     <form method="post" action="user_showResult">
     {% csrf_token %}
     {% block content %}

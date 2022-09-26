@@ -1,17 +1,9 @@
 from django import forms
-from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data,KeypointsModel
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
 
 class ClothesModelForm(forms.ModelForm):
     class Meta:
         model = Cloth
-        fields=('image',)
-        widgets={
-            'image': forms.FileInput(attrs={'class': 'form-control-file'})
-        }
-        
-class KeypointsModelForm(forms.ModelForm):
-    class Meta:
-        model = KeypointsModel
         fields=('image',)
         widgets={
             'image': forms.FileInput(attrs={'class': 'form-control-file'})
