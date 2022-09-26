@@ -1,4 +1,3 @@
-from asyncio.windows_events import NULL
 import cv2
 import time
 import json
@@ -20,8 +19,8 @@ from django.shortcuts import render
 from django.core.handlers.wsgi import WSGIRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, StreamingHttpResponse,JsonResponse
-from .forms import ClothesModelForm,ClothesDataModelForm, KeypointsModelForm,getEdgeAndLebelForm,generateImageForm
-from .models import Cloth,Cloth_data, KeypointsModel,getEdgeAndLebel_data,generateImage_data
+from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
 from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
@@ -844,8 +843,8 @@ def user_showResult(request):
     bodyDataList = zip(bodyDataName , bodyData)
     #get user selection of cloth image and data
     
-    cloth = NULL
-    cloth_data = NULL
+    cloth = None
+    cloth_data = None
     if request.method == "POST":
         print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])
