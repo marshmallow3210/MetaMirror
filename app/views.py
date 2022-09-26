@@ -454,6 +454,7 @@ def user_selectCloth(request):
     form = KeypointsModelForm()
     if request.method == "POST":
         form = KeypointsModelForm(request.POST, request.FILES)
+        json_data = request.POST.get("json_data", "")
         if form.is_valid():
             form.save()
             if(len(keypoints)>=1):
@@ -462,7 +463,8 @@ def user_selectCloth(request):
                 keypoints=keypoints[0]
     context = {
         'app': cloths,
-        'keypoints': keypoints
+        'keypoints': keypoints,
+        'json_data': json_data
     }
     return render(request, 'user_selectCloth.html', context)
 
