@@ -439,10 +439,11 @@ def user_selectCloth(request):
     json_data = ""
     if request.method == "POST":
         json_data = request.POST.get("json_data", "")
-    print(json_data)
+        json_bodyData = request.POST.get("json_bodyData", "")
     context = {
         'app': cloths,
-        'json_data': json_data
+        'json_data': json_data,
+        'json_bodyData': json_bodyData
     }
     return render(request, 'user_selectCloth.html', context)
 
@@ -792,7 +793,11 @@ def user_showResult(request):
     size_str = ""
     size_cnt = []
     size_result = ""
-    bodyData=[37,42,66]
+    bodyData = ""
+    if request.method == "POST":
+        bodyData = request.POST.get("json_bodyData", "")
+    print(bodyData)
+    
     # size chart, need to import from database
     chart = [[35, 40, 42, 43, 46],
             [49, 53, 57, 58, 62],
