@@ -20,7 +20,7 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, StreamingHttpResponse,JsonResponse
 from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
-from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
+from .models import Cloth,Cloth_data, bodyDataModel,getEdgeAndLebel_data,generateImage_data, lidardataModel
 from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
@@ -436,14 +436,22 @@ def user_showLidar(request):
 
 def user_selectCloth(request):
     cloths = Cloth.objects.all()
-    json_data = ""
     if request.method == "POST":
-        json_data = request.POST.get("json_data", "")
-        json_bodyData = request.POST.get("json_bodyData", "")
+        poseImg = request.POST.get("poseImg", "")
+        keypoints = request.POST.get("keypoints", "")
+        shoulderWidth = request.POST.get("shoulderWidth", "")
+        chestWidth = request.POST.get("chestWidth", "")
+        clothingLength = request.POST.get("clothingLength", "")
+        lidardataModel.objects.create(poseImg=poseImg,keypoints=keypoints)
+        bodyDataModel.objects.create(shoulderWidth=shoulderWidth,chestWidth=chestWidth,clothingLength=clothingLength)
+    
     context = {
         'app': cloths,
-        'json_data': json_data,
-        'json_bodyData': json_bodyData
+        'poseImg': poseImg,
+        'keypoints': keypoints,
+        'shoulderWidth': shoulderWidth,
+        'chestWidth': chestWidth,
+        'clothingLength': clothingLength
     }
     return render(request, 'user_selectCloth.html', context)
 
@@ -793,10 +801,21 @@ def user_showResult(request):
     size_str = ""
     size_cnt = []
     size_result = ""
-    bodyData = ""
-    if request.method == "POST":
-        bodyData = request.POST.get("json_bodyData", "")
-    print(bodyData)
+    
+    lidardata = lidardataModel.objects.all()
+    if(len(lidardata)>=1):
+        lidardata=lidardata[len(lidardata)-1]
+    else:
+        lidardata=lidardata[0]
+    poseImg=lidardata.poseImg
+    keypoints=lidardata.keypoints
+    
+    bodyData = bodyDataModel.objects.all()
+    if(len(bodyData)>=1):
+        bodyData=bodyData[len(bodyData)-1]
+    else:
+        bodyData=bodyData[0]
+    bodyData = [bodyData.shoulderWidth,bodyData.chestWidth,bodyData.clothingLength]
     
     # size chart, need to import from database
     chart = [[35, 40, 42, 43, 46],
@@ -873,8 +892,6 @@ def user_showResult(request):
     """
     context = {
         'bodyDataList': bodyDataList,
-        #'pose_keypoints': pose_keypoints,
-        #'pose_img': pose_img,
         'size_result': size_result,
         #'resultImage':resultImage_uri,
         'selectedcloth_img':cloth,

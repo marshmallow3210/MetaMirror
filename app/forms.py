@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data,lidardataModel,bodyDataModel
 
 class ClothesModelForm(forms.ModelForm):
     class Meta:
@@ -64,3 +64,13 @@ class generateImageForm(forms.ModelForm):
             'mask': forms.FileInput(attrs={'class': 'form-control-file'}),
             'pose':forms.NumberInput(attrs={'class': 'form-control'}),
          }
+
+class lidardataModelForm(forms.ModelForm):
+    class Meta:
+        model = lidardataModel
+        fields=('poseImg','keypoints')
+        
+class bodyDataModelForm(forms.ModelForm):
+    class Meta:
+        model = bodyDataModel
+        fields=('shoulderWidth','chestWidth','clothingLength')
