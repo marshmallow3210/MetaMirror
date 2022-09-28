@@ -17,6 +17,48 @@
             {{ size_result }}
         </p>
     </div>
+    <div align="center">
+        {% csrf_token %}
+        {% block content %}
+        {% if text.shoulder_s %}
+        <table> 
+            <tr>  
+                <th>size</th>  
+                <th>S</th>  
+                <th>M</th>
+                <th>L</th>
+                <th>XL</th>
+                <th>2L</th>  
+            </tr>  
+            <tr>  
+                <th>衣服肩寬</th>
+                <td>{{ text.shoulder_s }}</td>  
+                <td>{{ text.shoulder_m }}</td>  
+                <td>{{ text.shoulder_l }}</td> 
+                <td>{{ text.shoulder_xl }}</td> 
+                <td>{{ text.shoulder_2l }}</td>
+            </tr>  
+            <tr>  
+                <th>衣服胸寬</th>
+                <td>{{ text.chest_s }}</td>
+                <td>{{ text.chest_m }}</td>
+                <td>{{ text.chest_l }}</td>  
+                <td>{{ text.chest_xl }}</td>  
+                <td>{{ text.chest_2l }}</td>  
+            </tr>  
+            <tr>  
+                <th>衣服全長</th>  
+                <td>{{ text.length_s }}</td>  
+                <td>{{ text.length_m }}</td>
+                <td>{{ text.length_l }}</td>  
+                <td>{{ text.length_xl }}</td>  
+                <td>{{ text.length_2l }}</td>  
+            </tr> 
+
+        </table>
+        <br>
+        {% endif %}
+        {% endblock  %}
     <form method="get" action="">
         {% csrf_token %}
         <button type="submit">Go Home</button>
