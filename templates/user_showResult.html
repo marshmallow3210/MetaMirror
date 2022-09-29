@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>user_showResult</title>
 </head>
+{% csrf_token %}
 <body onload="user_show_img_Function()">
     <div>
         <h3>身體數據</h3>
@@ -18,7 +19,6 @@
         </p>
     </div>
     <div align="center">
-        {% csrf_token %}
         {% block content %}
         {% if text.shoulder_s %}
         <table> 
