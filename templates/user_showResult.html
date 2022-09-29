@@ -9,7 +9,9 @@
     <div>
         <h3>身體數據</h3>
         <p>
-            {{ bodyData }}<br>
+            {% for name,data in bodyDataList%}
+            {{ name }}: {{ data }} 公分<br>
+            {% endfor %}
         </p>
     </div>
     <div>
