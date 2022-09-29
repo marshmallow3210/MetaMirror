@@ -880,11 +880,22 @@ def user_showResult(request):
         bodyData=bodyData[0]
     bodyData = [bodyData.shoulderWidth,bodyData.chestWidth,bodyData.clothingLength]
     
+    #get user selection of cloth image and data
+    
+    cloth = None
+    cloth_data = None
+    if request.method == "POST":
+        print(request.POST['cloth'])
+        cloth=Cloth.objects.get(id=request.POST['cloth'])
+        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
+        print(cloth_data)
+        
     # size chart, need to import from database
-    chart = [[35, 40, 42, 43, 46],
-            [49, 53, 57, 58, 62],
-            [70, 75, 78, 81, 82],
-            [30, 32, 33, 34, 35]]
+    # chart = [[35, 40, 42, 43, 46],
+    #         [49, 53, 57, 58, 62],
+    #         [70, 75, 78, 81, 82],
+    #         [30, 32, 33, 34, 35]]
+    chart = cloth_data
 
     # compare with size chart
     for i in range(0, 3):
@@ -928,15 +939,6 @@ def user_showResult(request):
         print("INFO: The fit size is S and the loose size is M")
 
     bodyDataList = zip(bodyDataName , bodyData)
-    #get user selection of cloth image and data
-    
-    cloth = None
-    cloth_data = None
-    if request.method == "POST":
-        print(request.POST['cloth'])
-        cloth=Cloth.objects.get(id=request.POST['cloth'])
-        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        print(type(cloth_data.shoulder_s))
 
     """
     #test
