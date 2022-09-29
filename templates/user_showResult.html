@@ -6,7 +6,7 @@
 </head>
 {% csrf_token %}
 <body onload="user_show_img_Function()">
-    <div>
+    <div align="center">
         <h3>身體數據</h3>
         <p>
             {% for name,data in bodyDataList%}
@@ -14,7 +14,7 @@
             {% endfor %}
         </p>
     </div>
-    <div>
+    <div align="center">
         <h3>建議尺寸</h3>
         <p>
             {{ size_result }}
