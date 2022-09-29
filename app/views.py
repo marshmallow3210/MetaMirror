@@ -888,8 +888,8 @@ def user_showResult(request):
 
     # compare with size chart
     for i in range(0, 3):
-        bodyData[i] = np.round(bodyData[i],2)
         bodyData[i] = float(bodyData[i])
+        bodyData[i] = np.round(bodyData[i],2)
         if bodyData[i] <= chart[i][0]:
             size_str += "S"
         elif bodyData[i] >= chart[i][0] and bodyData[i] <= chart[i][1]:
@@ -936,7 +936,7 @@ def user_showResult(request):
         print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])
         cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        print(cloth_data)
+        print(type(cloth_data.shoulder_s))
 
     """
     #test
