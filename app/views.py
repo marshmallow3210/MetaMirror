@@ -870,8 +870,6 @@ def user_showResult(request):
         lidardata=lidardata[len(lidardata)-1]
     else:
         lidardata=lidardata[0]
-    poseImg=lidardata.poseImg
-    keypoints=lidardata.keypoints
     
     bodyData = bodyDataModel.objects.all()
     if(len(bodyData)>=1):
@@ -881,15 +879,13 @@ def user_showResult(request):
     bodyData = [float(bodyData.shoulderWidth),float(bodyData.chestWidth),float(bodyData.clothingLength)]
     
     #get user selection of cloth image and data
-    
     cloth = None
     cloth_data = None
     if request.method == "POST":
         print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])
         cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        print(cloth_data.shoulder_s)
-        
+    
     # size chart, need to import from database
     chart = [[cloth_data.shoulder_s, cloth_data.shoulder_m, cloth_data.shoulder_l, cloth_data.shoulder_xl, cloth_data.shoulder_2l],
             [cloth_data.chest_s, cloth_data.chest_m, cloth_data.chest_l, cloth_data.chest_xl, cloth_data.chest_2l],
@@ -937,6 +933,17 @@ def user_showResult(request):
 
     bodyDataList = zip(bodyDataName , bodyData)
 
+    poseImg=lidardata.poseImg
+    keypoints=lidardata.keypoints
+    colorImg=str(cloth.image)
+    tryOn = {
+        "poseImg": poseImg,
+        "colorImg": colorImg,
+        "keypoints": keypoints
+    }
+    with open('tryOn.json', 'w') as file:
+        file.write(tryOn)
+        
     """
     #test
     edgeImg,labelImg=getEdgeAndLebel(selectedcloth_img, pose_img)
