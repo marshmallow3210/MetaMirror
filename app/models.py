@@ -54,3 +54,12 @@ class generateImage_data(models.Model):
     mask =  models.ImageField()
     #人物關鍵點
     pose = models.FloatField()
+
+class lidardataModel(models.Model):
+    poseImg = models.TextField()
+    keypoints = models.TextField()
+    
+class bodyDataModel(models.Model):
+    shoulderWidth = models.TextField()
+    chestWidth = models.TextField()
+    clothingLength = models.TextField()
