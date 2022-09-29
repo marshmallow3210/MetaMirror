@@ -17,11 +17,11 @@ from django.contrib import admin
 from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from app.views import user_showLidar
+#from app.views import user_showLidar
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path(r'^user_showLidar/$', user_showLidar),
+    #re_path(r'^user_showLidar/$', user_showLidar),
     path('', include('app.urls'))
 ]
 
