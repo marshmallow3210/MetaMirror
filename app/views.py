@@ -888,14 +888,12 @@ def user_showResult(request):
         print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])
         cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        print(cloth_data)
+        print(cloth_data.shoulder_s)
         
     # size chart, need to import from database
-    # chart = [[35, 40, 42, 43, 46],
-    #         [49, 53, 57, 58, 62],
-    #         [70, 75, 78, 81, 82],
-    #         [30, 32, 33, 34, 35]]
-    chart = cloth_data
+    chart = [[cloth_data.shoulder_s, cloth_data.shoulder_m, cloth_data.shoulder_l, cloth_data.shoulder_xl, cloth_data.shoulder_2l],
+            [cloth_data.chest_s, cloth_data.chest_m, cloth_data.chest_l, cloth_data.chest_xl, cloth_data.chest_2l],
+            [cloth_data.length_s, cloth_data.length_m, cloth_data.length_l, cloth_data.length_xl, cloth_data.length_2l]]
 
     # compare with size chart
     for i in range(0, 3):
