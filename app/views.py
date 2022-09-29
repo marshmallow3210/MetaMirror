@@ -878,7 +878,7 @@ def user_showResult(request):
         bodyData=bodyData[len(bodyData)-1]
     else:
         bodyData=bodyData[0]
-    bodyData = [bodyData.shoulderWidth,bodyData.chestWidth,bodyData.clothingLength]
+    bodyData = [float(bodyData.shoulderWidth),float(bodyData.chestWidth),float(bodyData.clothingLength)]
     
     #get user selection of cloth image and data
     
@@ -897,7 +897,6 @@ def user_showResult(request):
 
     # compare with size chart
     for i in range(0, 3):
-        bodyData[i] = float(bodyData[i])
         bodyData[i] = np.round(bodyData[i],2)
         if bodyData[i] <= chart[i][0]:
             size_str += "S"
