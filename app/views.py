@@ -933,37 +933,20 @@ def user_showResult(request):
 
     bodyDataList = zip(bodyDataName , bodyData)
 
-    poseImg=lidardata.poseImg
-    keypoints=lidardata.keypoints
-    colorImg=str(cloth.image)
-    tryOn = {
-        "poseImg": poseImg,
-        "colorImg": colorImg,
-        "keypoints": keypoints
-    }
-    tryOn = json.dumps(tryOn)
-    with open('tryOn.json', 'w') as file:
-        file.write(tryOn)
+    poseImg=json.dumps(lidardata.poseImg)
+    keypoints=json.dumps(lidardata.keypoints)
+    colorImg=json.dumps(str(cloth.image))
         
-    """
-    #test
-    edgeImg,labelImg=getEdgeAndLebel(selectedcloth_img, pose_img)
+    #try on
+    edgeImg,labelImg=getEdgeAndLebel(keypoints, poseImg)
     maskImg=Image.open('00000.png').convert('L')
     colorMaskImg=Image.open('00000_test.png').convert('L')
-    resultImage_uri=generateImage(labelImg, pose_img, selectedcloth_img, colorMaskImg, edgeImg, maskImg, pose_keypoints)
-    
-    cloth = NULL
-    cloth_data=NULL
-    if request.method == "POST":
-        print(request.POST['cloth'])
-        cloth=Cloth.objects.get(id=request.POST['cloth'])
-        cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        print(cloth_data)
-    """
+    resultImage_uri=generateImage(labelImg, poseImg, colorImg, colorMaskImg, edgeImg, maskImg, keypoints)
+        
     context = {
         'bodyDataList': bodyDataList,
         'size_result': size_result,
-        #'resultImage':resultImage_uri,
+        'resultImage':resultImage_uri,
         'selectedcloth_img':cloth,
         'text':cloth_data
     }
