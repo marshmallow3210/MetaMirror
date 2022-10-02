@@ -941,6 +941,7 @@ def user_showResult(request):
         "colorImg": colorImg,
         "keypoints": keypoints
     }
+    tryOn = json.dumps(tryOn)
     with open('tryOn.json', 'w') as file:
         file.write(tryOn)
         
