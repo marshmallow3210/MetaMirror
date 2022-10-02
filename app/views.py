@@ -845,7 +845,6 @@ def shopGenerateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,key
  
     
 def user_showResult(request):
-    json_body = json.loads(request.body)
     bodyDataName = ["肩寬","胸寬","身長"]
     size_str = ""
     size_cnt = []
@@ -864,17 +863,19 @@ def user_showResult(request):
         bodyData=bodyData[0]
     bodyData = [float(bodyData.shoulderWidth),float(bodyData.chestWidth),float(bodyData.clothingLength)]
     
-    poseImg=lidardata.poseImg
-    keypoints=lidardata.keypoints
-    colorImg=str(cloth.image)
         
     #get user selection of cloth image and data
     cloth = None
     cloth_data = None
     if request.method == "POST":
-        print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])
         cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
+        poseImg=lidardata.poseImg
+        keypoints=lidardata.keypoints
+        keypoints=keypoints[1:-1]
+        keypoints = keypoints.split(",")
+        keypoints = list(map(float, keypoints))
+        colorImg=str(cloth.image)
         io_buf = base64.b64decode(poseImg)
         poseImg = np.frombuffer(io_buf, dtype=np.uint8)
         poseImg=cv2.imdecode(poseImg,cv2.IMREAD_COLOR)
@@ -884,7 +885,6 @@ def user_showResult(request):
         ret = str(random.randint(0, 9999)).zfill(5)
         maskImg=Image.open('app/test_mask/'+ret+'.png').convert('L')
         colorMaskImg=Image.open('app/test_colormask/'+ret+'_test.png').convert('L')
-        print(type(colorImg))
         edgeImg,labelImg=getEdgeAndLabel(colorImg,poseImg)
     
     # size chart, need to import from database
