@@ -726,7 +726,7 @@ def generateImage(request):
         poseImg = np.frombuffer(io_buf, dtype=np.uint8)
         poseImg=cv2.imdecode(poseImg,cv2.IMREAD_COLOR)
         colorImg=json_body['colorImg']
-        colorImg=cv2.imread("media/cloth/"+colorImg+".jpg")
+        colorImg=cv2.imread("media/"+colorImg)
         keypoints=json_body['keypoints']
         poseImg,keypoints=reSize(poseImg,keypoints)
         
@@ -936,7 +936,7 @@ def user_showResult(request):
         print("INFO: The fit size is S and the loose size is M")
 
     bodyDataList = zip(bodyDataName , bodyData)
-
+    print(bodyDataList)
     """
     #test
     edgeImg,labelImg=getEdgeAndLebel(selectedcloth_img, pose_img)
@@ -976,24 +976,25 @@ def cloth_preview(request):
     cloth_img = cv2.imread('media/'+str(cloths.image))
     maskImg=Image.open('00000.png').convert('L')
     colorMaskImg=Image.open('00000_test.png').convert('L')
-    p_keypoints=[95.76296296296296 ,85.33333333333333, 1.404750108718872, 
-                    99.55555555555556, 130.84444444444443, 1.4445000886917114, 
-                    66.84444444444445, 131.31851851851852, 1.4512500762939453, 
-                    41.24444444444445 ,180.62222222222223, 1.443000078201294, 
-                    10.42962962962963, 221.86666666666667, 1.4037500619888306, 
-                    132.26666666666668, 130.37037037037038, 1.4852501153945923, 
-                    156.44444444444446, 183.46666666666667, 1.567500114440918, 
-                    188.2074074074074, 232.2962962962963, 1.564500093460083, 
-                    79.17037037037036, 212.85925925925926, 1.3842500448226929, 
-                    0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0,
-                    116.62222222222222, 214.28148148148148, 1.409250020980835,
-                    0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0, 
-                    87.70370370370371 ,79.64444444444445, 1.41225004196167, 
-                    101.92592592592592, 79.17037037037036, 1.411500096321106,
-                    82.96296296296296 ,84.85925925925926, 1.4270000457763672, 
-                    109.98518518518519, 82.96296296296296, 1.4280000925064087]
+    p_keypoints=[514, 87, 1.2070000171661377, 
+                 508, 202, 1.284250020980835, 
+                 431, 198, 1.277000069618225, 
+                 389, 326, 1.3222500085830688, 
+                 357, 438, 1.2910000085830688, 
+                 585, 206, 1.312000036239624, 
+                 609, 342, 1.350000023841858, 
+                 642, 460, 1.346750020980835, 
+                 449, 421, 1.2257500886917114, 
+                 0.0, 0.0, 0.0, 
+                 0.0, 0.0, 0.0, 
+                 539, 423, 1.2355000972747803, 
+                 0.0, 0.0, 0.0, 
+                 0.0, 0.0, 0.0, 
+                 497, 72, 1.220500111579895,
+                 533, 75, 1.215250015258789, 
+                 481, 85, 1.2395000457763672, 
+                 550, 89, 1.2375000715255737]
+    model_img,p_keypoints=reSize(model_img,p_keypoints)
 
     if request.method == "POST":
         form = ClothesDataModelForm(request.POST)
