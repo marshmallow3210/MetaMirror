@@ -5,12 +5,10 @@
     <title>user_manual</title>
 </head>
 <body>
-    <h1>使用者說明</h1>
-    <p>非常詳細的說明<p>
-    <form method="get" action="user_showLidar">
-        {% csrf_token %}
-        <button type="submit">已同意說明並進到下一步</button>
-    </form>
-    <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000/user_showLidar'" value="local的下一步"></input>
+    <div align="center">
+        <h1>使用者說明</h1>
+        <p>非常詳細的說明<p>
+        <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000/user_showLidar'" value="local的下一步"></input>
+    </div>
 </body>
 </html>
