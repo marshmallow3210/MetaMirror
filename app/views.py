@@ -864,6 +864,18 @@ def user_showResult(request):
         bodyData=bodyData[0]
     bodyData = [float(bodyData.shoulderWidth),float(bodyData.chestWidth),float(bodyData.clothingLength)]
     
+    poseImg=lidardata.poseImg
+    keypoints=lidardata.keypoints
+    colorImg=str(cloth.image)
+    tryOn = {
+        "poseImg": poseImg,
+        "colorImg": colorImg,
+        "keypoints": keypoints
+    }
+    tryOn = json.dumps(tryOn)
+    with open('tryOn.json', 'w') as file:
+        file.write(tryOn)
+        
     #get user selection of cloth image and data
     cloth = None
     cloth_data = None
@@ -988,7 +1000,7 @@ def cloth_preview(request):
             cloth_info['image_ID']=cloths.id
             print("cloth_info:",cloth_info)
             Cloth_data.objects.create(**cloth_info)
-            img_gray,parsing_result=getEdgeAndLebel(cloth_img,model_img)
+            img_gray,parsing_result=getEdgeAndLabel(cloth_img,model_img)
             resultImage=shopGenerateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints)
             print("result_img:",resultImage)
 
