@@ -867,14 +867,6 @@ def user_showResult(request):
     poseImg=lidardata.poseImg
     keypoints=lidardata.keypoints
     colorImg=str(cloth.image)
-    tryOn = {
-        "poseImg": poseImg,
-        "colorImg": colorImg,
-        "keypoints": keypoints
-    }
-    tryOn = json.dumps(tryOn)
-    with open('tryOn.json', 'w') as file:
-        file.write(tryOn)
         
     #get user selection of cloth image and data
     cloth = None
@@ -883,13 +875,10 @@ def user_showResult(request):
         print(request.POST['cloth'])
         cloth=Cloth.objects.get(id=request.POST['cloth'])
         cloth_data=Cloth_data.objects.get(image_ID=request.POST['cloth'])
-        poseImg=json_body['poseImg']
         io_buf = base64.b64decode(poseImg)
         poseImg = np.frombuffer(io_buf, dtype=np.uint8)
         poseImg=cv2.imdecode(poseImg,cv2.IMREAD_COLOR)
-        colorImg=json_body['colorImg']
         colorImg=cv2.imread("media/"+colorImg)
-        keypoints=json_body['keypoints']
         poseImg,keypoints=reSize(poseImg,keypoints)
         
         ret = str(random.randint(0, 9999)).zfill(5)
