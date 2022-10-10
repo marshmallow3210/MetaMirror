@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <title>user_manual</title>
@@ -7,8 +8,36 @@
 <body>
     <div align="center">
         <h1>使用者說明</h1>
-        <p>非常詳細的說明<p>
-        <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000/user_showLidar'" value="local的下一步"></input>
+        <p>
+            <strong>一、閱讀使用說明並同意使用者規定<strong>
+            同意本專題使用您的影像。
+            測量注意事項:
+            1.站在距離鏡頭約1.2公尺處。
+            2.要求姿勢: 雙手向兩側伸直。
+            如:
+            <br>
+            <img src="{% static 'app/img/pose_require.jpg'%}" width="300" heigh="300" alt="pose_require">
+            <br>
+            3.確認周圍無障礙物。
+            4.請勿遮蔽您美麗的臉龐，如有配戴口罩請將口罩脫下。
+            5.建議穿著合身的衣物，以及在明亮的環境下測量，結果會更準確。
+            
+            閱讀並同意後按下按鈕。
+        <p>
+        <p>
+            <strong>二、開始測量身材並確認影像<strong>
+            1.按下"開始測量身材"按鈕。
+            2.顯示"測量成功"後，即可進入下一步選擇衣服。
+        <p>
+        <p>
+            <strong>三、選擇欲試穿衣服<strong>
+            挑一件自己喜歡的漂釀衣服。
+        <p>
+        <p>
+            <strong>四、顯示結果<strong>
+            將呈現您的身體數據、建議尺寸、試穿結果影像，以及所選衣服的尺寸表。
+        <p>
+        <input type ="button" onclick="javascript:location.href='http://127.0.0.1:8000/user_showLidar'" value="已閱讀使用說明並同意此專題使用影像"></input>
     </div>
 </body>
 </html>
