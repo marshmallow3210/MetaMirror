@@ -77,10 +77,7 @@
         <br>
         {% endif %}
         {% endblock  %}
-    <form method="get" action="">
-        {% csrf_token %}
-        <button type="submit">Go Home</button>
-    </form>
+        <input type ="button" onclick="javascript:location.href='http://25.69.108.176:8000'" value="回首頁"></input>
     {% comment %} <button onclick="javascript:location.href='http://25.69.108.176:8000/'">Go Home</button> {% endcomment %}
 </body>
 <script type="text/javascript">
