@@ -1,5 +1,5 @@
 from django import forms
-from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data,lidardataModel,bodyDataModel
+from .models import Cloth,Cloth_data,getEdgeAndLebel_data,generateImage_data,lidardataModel,bodyDataModel,resultImgModel
 
 class ClothesModelForm(forms.ModelForm):
     class Meta:
@@ -74,3 +74,8 @@ class bodyDataModelForm(forms.ModelForm):
     class Meta:
         model = bodyDataModel
         fields=('shoulderWidth','chestWidth','clothingLength')
+        
+class resultImgModelForm(forms.ModelForm):
+    class Meta:
+        model = resultImgModel
+        fields=('image',)
