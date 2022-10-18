@@ -370,7 +370,7 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         cv2.imwrite("test.jpg",cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
         # save to media/bgRemovedImg for showing on html
         resultImg = resultImgModel.objects.all()
-        path = 'C:/Users/amy21/Documents/GitHub/MetaMirror_user/media/resultImg_'
+        path = 'media/resultImg/'
         cv2.imwrite(os.path.join(path, 'resultImg_'+ str(len(resultImg)) +'.jpg'), rgb)
         resultImgModel.objects.create(image='resultImg/resultImg'+ str(len(resultImg)) +'.jpg')
     
