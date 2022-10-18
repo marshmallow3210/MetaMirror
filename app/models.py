@@ -63,3 +63,6 @@ class bodyDataModel(models.Model):
     shoulderWidth = models.TextField()
     chestWidth = models.TextField()
     clothingLength = models.TextField()
+    
+class resultImgModel(models.Model):
+    image = models.ImageField(upload_to='resultImg/')
