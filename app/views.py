@@ -367,7 +367,8 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         # combine=c[0].squeeze()
         cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
         rgb=(cv_img*255).astype(np.uint8)
-        cv2.imwrite("test.jpg",cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+        rgb=cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        cv2.imwrite("test.jpg",rgb)
         # save to media/bgRemovedImg for showing on html
         resultImg = resultImgModel.objects.all()
         path = 'media/resultImg/'
