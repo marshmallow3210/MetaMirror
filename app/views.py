@@ -371,7 +371,7 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         resultImg = resultImgModel.objects.all()
         path = 'C:/Users/amy21/Documents/GitHub/MetaMirror_user/media/resultImg_'
         cv2.imwrite(os.path.join(path, 'resultImg_'+ str(len(resultImg)) +'.jpg'), rgb)
-        resultImgModel.objects.create(image='bgRemovedImg/bgRemovedImg'+ str(len(resultImg)) +'.jpg')
+        resultImgModel.objects.create(image='resultImg/resultImg'+ str(len(resultImg)) +'.jpg')
     
         rgb=Image.open("test.jpg")
         imgByteArr = io.BytesIO()
