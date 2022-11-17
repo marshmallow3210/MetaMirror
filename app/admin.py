@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cloth,Cloth_data,lidardataModel,bodyDataModel,resultImgModel
+from .models import Cloth,Cloth_data,lidardataModel,bodyDataModel, originalPoseImgModel,resultImgModel
 
 # Register your models here.
 class ClothAdmin(admin.ModelAdmin):
@@ -19,8 +19,12 @@ class bodyDataAdmin(admin.ModelAdmin):
 class resultImgAdmin(admin.ModelAdmin):
     list_display = ('image',)
     
+class originalPoseImgAdmin(admin.ModelAdmin):
+    list_display = ('originalPoseImg',)
+    
 admin.site.register(Cloth,ClothAdmin)
 admin.site.register(Cloth_data,ClothDataAdmin)
 admin.site.register(lidardataModel,lidardataAdmin)
 admin.site.register(bodyDataModel,bodyDataAdmin)
 admin.site.register(resultImgModel,resultImgAdmin)
+admin.site.register(originalPoseImgModel,originalPoseImgAdmin)

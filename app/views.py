@@ -126,8 +126,8 @@ def apiTest(request:WSGIRequest):
         return JsonResponse({'status':'succeed','context':'hello worldd'})
 
 def home(request):
-    #getLidar()
     return render(request,'home.html',locals())
+
 def user_manual(request):
     return render(request,'user_manual.html',locals())
 
@@ -135,16 +135,19 @@ def user_selectCloth(request):
     cloths = Cloth.objects.all()
     time.sleep(1)
     if request.method == "POST":
+        originalPoseImg = request.POST.get("originalPoseImg", "")
         poseImg = request.POST.get("poseImg", "")
         keypoints = request.POST.get("keypoints", "")
         shoulderWidth = request.POST.get("shoulderWidth", "")
         chestWidth = request.POST.get("chestWidth", "")
         clothingLength = request.POST.get("clothingLength", "")
+        lidardataModel.objects.create(originalPoseImg=originalPoseImg,)
         lidardataModel.objects.create(poseImg=poseImg,keypoints=keypoints)
         bodyDataModel.objects.create(shoulderWidth=shoulderWidth,chestWidth=chestWidth,clothingLength=clothingLength)
     
     context = {
         'app': cloths,
+        'originalPoseImg': originalPoseImg,
         'poseImg': poseImg,
         'keypoints': keypoints,
         'shoulderWidth': shoulderWidth,

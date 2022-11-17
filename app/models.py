@@ -66,3 +66,6 @@ class bodyDataModel(models.Model):
     
 class resultImgModel(models.Model):
     image = models.ImageField(upload_to='resultImg/')
+    
+class originalPoseImgModel(models.Model):
+    originalPoseImg = models.TextField()
