@@ -20,7 +20,7 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, StreamingHttpResponse,JsonResponse
 from .forms import ClothesModelForm,ClothesDataModelForm,getEdgeAndLebelForm,generateImageForm
-from .models import Cloth,Cloth_data, bodyDataModel,getEdgeAndLebel_data,generateImage_data, lidardataModel, resultImgModel
+from .models import Cloth,Cloth_data, bodyDataModel,getEdgeAndLebel_data,generateImage_data, lidardataModel, originalPoseImgModel, resultImgModel
 from app.ganModels.models import create_model
 from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
@@ -141,7 +141,7 @@ def user_selectCloth(request):
         shoulderWidth = request.POST.get("shoulderWidth", "")
         chestWidth = request.POST.get("chestWidth", "")
         clothingLength = request.POST.get("clothingLength", "")
-        lidardataModel.objects.create(originalPoseImg=originalPoseImg,)
+        originalPoseImgModel.objects.create(originalPoseImg=originalPoseImg,)
         lidardataModel.objects.create(poseImg=poseImg,keypoints=keypoints)
         bodyDataModel.objects.create(shoulderWidth=shoulderWidth,chestWidth=chestWidth,clothingLength=clothingLength)
     
