@@ -26,6 +26,99 @@ from app import networks
 from app.utils.transforms import transform_logits,get_affine_transform
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
+def sharpen(img,sigma=1,k=5 ):    
+    
+    delta_img=img.astype(np.int) - cv2.GaussianBlur(img,(0,0),sigma).astype(np.int)
+    result = img.astype(np.int) + k*delta_img
+    result = np.where(result < 0,0,result) #result[result<0] = 0
+    result = np.where(result > 255,255,result) #result[result>255]=255
+    enhanced = result.astype(np.uint8) #enhanced = cv2.convertScaleAbs(result)
+    return enhanced
+
+def generate(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints,sumtime,total):
+    SIZE=320
+    NC=14
+    s_time=time.time()
+    # convert and pass the image as base64 string to avoid storing it to DB or filesystem
+    labelImage = Image.fromarray(cv2.cvtColor(labelImg.astype(np.uint8),cv2.COLOR_BGR2RGB))
+    params=get_params(labelImage.size)
+    pose = makePose(keypoints,params)
+    pose=pose.unsqueeze(0)
+    transform_A = get_transform(params, method=Image.NEAREST, normalize=False)
+    transform_B = get_transform(params)
+    labelImage=labelImage.convert('L')
+    labelTensor = transform_A(labelImage) * 255.0
+    labelTensor=labelTensor.unsqueeze(0)
+    humanImage = Image.fromarray(cv2.cvtColor(poseImg,cv2.COLOR_BGR2RGB))
+    humanTensor = transform_B(humanImage)
+    humanTensor=humanTensor.unsqueeze(0)   
+    colorImage = Image.fromarray(cv2.cvtColor(colorImg,cv2.COLOR_BGR2RGB))
+    colorTensor = transform_B(colorImage)
+    colorTensor=colorTensor.unsqueeze(0) 
+    colorMaskTensor = transform_A(colorMaskImg)
+    edgeImage = Image.fromarray(cv2.cvtColor(edgeImg,cv2.COLOR_BGR2RGB))
+    edgeImage=edgeImage.convert('L')
+    edgeTensor = transform_A(edgeImage)
+    edgeTensor=edgeTensor.unsqueeze(0) 
+    maskTensor = transform_A(maskImg)
+    maskTensor=maskTensor.unsqueeze(0) 
+    try:
+        # whether to collect output images
+        #save_fake = total_steps % 100 == display_delta
+        save_fake = True
+        ##add gaussian noise channel
+        ## wash the label
+        t_mask = torch.FloatTensor((labelTensor.cpu().numpy() == 7).astype(np.float64))
+        mask_clothes = torch.FloatTensor((labelTensor.cpu().numpy() == 4).astype(np.int32))
+        mask_fore = torch.FloatTensor((labelTensor.cpu().numpy() > 0).astype(np.int32))
+        img_fore = humanTensor * mask_fore
+        img_fore_wc = img_fore * mask_fore
+        all_clothes_label = changearm(labelTensor)
+        ############## Forward Pass ######################
+        losses, fake_image, real_image, input_label,L1_loss,style_loss,clothes_mask,CE_loss,rgb,alpha= ganModel(Variable(labelTensor.cuda()),Variable(edgeTensor.cuda()),Variable(img_fore.cuda()),Variable(mask_clothes.cuda())
+                                                                                                    ,Variable(colorTensor.cuda()),Variable(all_clothes_label.cuda()),Variable(humanTensor.cuda()),Variable(pose.cuda()) ,Variable(humanTensor.cuda()) ,Variable(mask_fore.cuda()))
+        ### display output images
+        generateImage = fake_image.float().cuda()
+        generateImage = generateImage[0].squeeze()
+        # combine=c[0].squeeze()
+        cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
+        rgb=(cv_img*255).astype(np.uint8)
+        rgb=cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        c_time = time.time()
+        ss_time = c_time - s_time
+        sumtime+=ss_time
+        total+=1
+        return rgb,sumtime,total
+    except RuntimeError as re:
+        print(re)
+
+'''將資料庫中所有lidar圖像轉為192*256並輸出至MetaMirror的lidar資料夾中，使用前請在目錄下創建lidar資料夾'''
+def getLidar():
+    data = lidardataModel.objects.all()
+    colorImg=cv2.imread('media/cloth/020000_1.jpg')
+    i=0
+    for o in data:
+        poseImg=o.poseImg
+        keypoints=o.keypoints
+        keypoints=keypoints[1:-1]
+        keypoints = keypoints.split(",")
+        keypoints = list(map(float, keypoints))
+        io_buf = base64.b64decode(poseImg)
+        poseImg = np.frombuffer(io_buf, dtype=np.uint8)
+        poseImg=cv2.imdecode(poseImg,cv2.IMREAD_COLOR)
+        poseImg,keypoints=reSize(poseImg,keypoints)
+        #sharpPose=sharpen(poseImg)
+        ret = str(random.randint(0, 9999)).zfill(5)
+        maskImg=Image.open('app/test_mask/'+ret+'.png').convert('L')
+        colorMaskImg=Image.open('app/test_colormask/'+ret+'_test.png').convert('L')
+        edgeImg,labelImg=getEdgeAndLabel(colorImg,poseImg)
+        sumtime=0
+        total=0
+        rgb,sumtime,total=generate(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints,sumtime,total)
+        cv2.imwrite('sharp/origin'+str(i)+'.jpg',rgb)
+        cv2.imwrite('lidar/origin'+str(i)+'.jpg',poseImg)
+        i+=1
+    print(sumtime/total)
 
 @csrf_exempt
 def apiTest(request:WSGIRequest):
@@ -33,6 +126,7 @@ def apiTest(request:WSGIRequest):
         return JsonResponse({'status':'succeed','context':'hello worldd'})
 
 def home(request):
+    #getLidar()
     return render(request,'home.html',locals())
 def user_manual(request):
     return render(request,'user_manual.html',locals())
@@ -305,14 +399,16 @@ def makePose(pose,params):
         pose_map[i] = one_map[0]
     return pose_map
 
-def reSize(img,keypoints):
+def reSize(img,keypoints,original):
     nose=int(keypoints[0])
     img=img[:,(nose-202):(nose+203)]
+    original=original[:,(nose-202):(nose+203)]
     img=cv2.resize(img,(192,256),interpolation=cv2.INTER_AREA)
+    original=cv2.resize(original,(192,256),interpolation=cv2.INTER_AREA)
     for i in range(0,42,3):
         keypoints[i],keypoints[i+1]=thansfer(keypoints[i],keypoints[i+1],nose,img)
         
-    return img,keypoints 
+    return img,keypoints,original 
 
 def thansfer(width,height,nose,img):
     a=(width-(nose-202))*192/405
@@ -320,7 +416,7 @@ def thansfer(width,height,nose,img):
     return a,b
 
 @csrf_exempt
-def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints):
+def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints,original):
     SIZE=320
     NC=14
     # convert and pass the image as base64 string to avoid storing it to DB or filesystem
@@ -368,11 +464,18 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
         rgb=(cv_img*255).astype(np.uint8)
         rgb=cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-        cv2.imwrite("test.jpg",rgb)
+        img2gray = cv2.cvtColor(rgb,cv2.COLOR_RGB2GRAY)
+        ret, mask = cv2.threshold(img2gray, 230, 255, cv2.THRESH_BINARY)
+        img1_bg = cv2.bitwise_and(original, original, mask = mask)
+        img1_bg=cv2.cvtColor(img1_bg, cv2.COLOR_BGR2RGB)
+        mask_inv = cv2.bitwise_not(mask)
+        img2_fg = cv2.bitwise_and(rgb, rgb, mask = mask_inv)
+        blendImg = cv2.add(img1_bg,img2_fg)
+        cv2.imwrite("test.jpg",cv2.cvtColor(blendImg, cv2.COLOR_RGB2BGR))
         # save to media/bgRemovedImg for showing on html
         resultImg = resultImgModel.objects.all()
         path = 'media/resultImg/'
-        cv2.imwrite(os.path.join(path, 'resultImg_'+ str(len(resultImg)) +'.jpg'), rgb)
+        cv2.imwrite(os.path.join(path, 'resultImg_'+ str(len(resultImg)) +'.jpg'), cv2.cvtColor(blendImg, cv2.COLOR_RGB2BGR))
         resultImgModel.objects.create(image='resultImg/resultImg'+ str(len(resultImg)) +'.jpg')
     
         rgb=Image.open("test.jpg")
@@ -392,7 +495,7 @@ def generateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoin
         return render(request, 'user_showResult.html', context)
     '''
  
-def shopGenerateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints):
+def shopGenerateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,keypoints,original):
     
     SIZE=320
     NC=14
@@ -444,7 +547,16 @@ def shopGenerateImage(labelImg,poseImg,colorImg,colorMaskImg,edgeImg,maskImg,key
         # combine=c[0].squeeze()
         cv_img=(generateImage.permute(1,2,0).detach().cpu().numpy()+1)/2
         rgb=(cv_img*255).astype(np.uint8)
-        cv2.imwrite("test.jpg",cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+        
+        
+        img2gray = cv2.cvtColor(rgb,cv2.COLOR_RGB2GRAY)
+        ret, mask = cv2.threshold(img2gray, 230, 255, cv2.THRESH_BINARY)
+        img1_bg = cv2.bitwise_and(original, original, mask = mask)
+        img1_bg=cv2.cvtColor(img1_bg, cv2.COLOR_BGR2RGB)
+        mask_inv = cv2.bitwise_not(mask)
+        img2_fg = cv2.bitwise_and(rgb, rgb, mask = mask_inv)
+        blendImg = cv2.add(img1_bg,img2_fg)
+        cv2.imwrite("test.jpg",cv2.cvtColor(blendImg, cv2.COLOR_RGB2BGR))
         rgb=Image.open("test.jpg")
         imgByteArr = io.BytesIO()
         rgb.save(imgByteArr, format='JPEG')
@@ -491,7 +603,7 @@ def user_showResult(request):
         poseImg = np.frombuffer(io_buf, dtype=np.uint8)
         poseImg=cv2.imdecode(poseImg,cv2.IMREAD_COLOR)
         colorImg=cv2.imread("media/"+colorImg)
-        poseImg,keypoints=reSize(poseImg,keypoints)
+        poseImg,keypoints,original=reSize(poseImg,keypoints,original)
         
         ret = str(random.randint(0, 9999)).zfill(5)
         maskImg=Image.open('app/test_mask/'+ret+'.png').convert('L')
@@ -571,6 +683,7 @@ def cloth_preview(request):
     model_img = cv2.imread('020000_0.jpg')
     cloth_img = cv2.imread('media/'+str(cloths.image))
     maskImg=Image.open('00000.png').convert('L')
+    original=cv2.imread('original.jpg')
     colorMaskImg=Image.open('00000_test.png').convert('L')
     p_keypoints=[479, 142, 1.3290001153945923, 
                  472, 221, 1.4182500839233398,
@@ -590,7 +703,7 @@ def cloth_preview(request):
                  496, 127, 1.3475000858306885, 
                  450, 136, 1.3632500171661377, 
                  509, 137, 1.3595000505447388]
-    model_img,p_keypoints=reSize(model_img,p_keypoints)
+    model_img,p_keypoints,original=reSize(model_img,p_keypoints,original)
 
     if request.method == "POST":
         form = ClothesDataModelForm(request.POST)
@@ -601,7 +714,7 @@ def cloth_preview(request):
             print("cloth_info:",cloth_info)
             Cloth_data.objects.create(**cloth_info)
             img_gray,parsing_result=getEdgeAndLabel(cloth_img,model_img)
-            resultImage=shopGenerateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints)
+            resultImage=shopGenerateImage(parsing_result, model_img, cloth_img, colorMaskImg, img_gray, maskImg, p_keypoints,original)
             print("result_img:",resultImage)
 
     context = {

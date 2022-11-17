@@ -2,3 +2,6 @@ app/LIP/
 app/checkpoints/label2city/
 app/test_mask/
 app/test_colormask/
+sharp/
+media/
+lidar/
